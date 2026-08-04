@@ -17,7 +17,7 @@ def get_forex_price(symbol="XAU/USD"):
 MARKETAUX_API_KEY = os.getenv("MARKETAUX_API_KEY")
 
 def get_market_news():
-    url = f"https://api.marketaux.com/v1/news/all?api_token={MARKETAUX_API_KEY}&limit=5"
+    url = f"https://api.marketaux.com/v1/news/all?api_token={MARKETAUX_API_KEY}&symbols=USD,XAU,EUR,GBP,JPY&language=en&limit=5"
     response = requests.get(url)
     return response.json()
     
