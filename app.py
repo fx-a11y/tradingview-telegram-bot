@@ -14,6 +14,13 @@ def get_forex_price(symbol="XAU/USD"):
     response = requests.get(url)
     return response.json()
 
+MARKETAUX_API_KEY = os.getenv("MARKETAUX_API_KEY")
+
+def get_market_news():
+    url = f"https://api.marketaux.com/v1/news/all?api_token={MARKETAUX_API_KEY}&limit=5"
+    response = requests.get(url)
+    return response.json()
+    
 @app.route("/webhook", methods=["POST"])
 def webhook():
     data = request.json
@@ -55,6 +62,11 @@ def test():
     )
 
     return "Pesan terkirim ke Telegram"
+
+@app.route("/news")
+def news():
+    return get_market_news()
+    
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
 
