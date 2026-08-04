@@ -40,6 +40,20 @@ Harga XAUUSD:
 @app.route("/")
 def home():
     return get_forex_price("XAU/USD")
+    @app.route("/test")
+def test():
+
+    price = get_forex_price("XAU/USD")
+
+    requests.post(
+        f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
+        json={
+            "chat_id": CHAT_ID,
+            "text": f"✅ Tes berhasil!\n\nHarga XAUUSD: {price['price']}"
+        }
+    )
+
+    return "Pesan terkirim ke Telegram"
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
 
