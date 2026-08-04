@@ -40,7 +40,8 @@ Harga XAUUSD:
 @app.route("/")
 def home():
     return get_forex_price("XAU/USD")
-    @app.route("/test")
+    
+@app.route("/test")
 def test():
 
     price = get_forex_price("XAU/USD")
