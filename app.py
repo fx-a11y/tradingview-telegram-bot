@@ -37,7 +37,9 @@ Harga XAUUSD:
     )
 
     return "OK"
-
+@app.route("/")
+def home():
+    return get_forex_price("XAU/USD")
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
 
