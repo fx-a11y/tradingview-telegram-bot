@@ -15,11 +15,18 @@ def get_forex_price(symbol="XAU/USD"):
     return response.json()
 
 MARKETAUX_API_KEY = os.getenv("MARKETAUX_API_KEY")
+CALENDAR_API = os.getenv("ECONOMIC_CALENDAR_API")
 
 def get_market_news():
     url = f"https://api.marketaux.com/v1/news/all?api_token={MARKETAUX_API_KEY}&symbols=USD,XAU,EUR,GBP,JPY&language=en&limit=5"
     response = requests.get(url)
     return response.json()
+
+def get_calendar():
+    response = requests.get(CALENDAR_API)
+    return response.json()
+    
+    
     
 @app.route("/webhook", methods=["POST"])
 def webhook():
@@ -66,6 +73,10 @@ def test():
 @app.route("/news")
 def news():
     return get_market_news()
+
+@app.route("/calendar")
+def calendar():
+    return get_calendar()
     
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
