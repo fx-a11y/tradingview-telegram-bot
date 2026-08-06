@@ -77,7 +77,8 @@ def test():
 @app.route("/news")
 def news():
     return get_market_news()
-
+    
+from flask import jsonify
 @app.route("/calendar")
 def calendar():
     return get_calendar()
