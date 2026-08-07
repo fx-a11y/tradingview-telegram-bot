@@ -36,16 +36,29 @@ def get_calendar():
             timeout=15
         )
 
+        if response.status_code != 200:
+            return {
+                "events": [],
+                "error": response.text,
+                "status_code": response.status_code
+            }
+
+        data = response.json()
+
+        events = (
+            data.get("data", {})
+                .get("data", {})
+        )
+
         return {
-            "status_code": response.status_code,
-            "response": response.text[:2000]
+            "events": events
         }
 
     except Exception as e:
         return {
-            "status_code": 500,
+            "events": [],
             "error": str(e)
-        }
+            }
 
 
 def get_relevant_events(pair):
