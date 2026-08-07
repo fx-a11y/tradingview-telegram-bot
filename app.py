@@ -33,10 +33,29 @@ def get_calendar():
         timeout=15
     )
 
+    response.raise_for_status()
+
+    result = response.json()
+
+    # Data kalender berada di dalam data -> data
+    events = result.get("data", {}).get("data", [])
+
+    # Mata uang yang berpengaruh terhadap pair kita
+    currencies = ["USD", "EUR", "GBP", "JPY"]
+
+    filtered_events = []
+
+    for event in events:
+        currency = event.get("currencyCode")
+
+        if currency in currencies:
+            filtered_events.append(event)
+
     return {
-        "status_code": response.status_code,
-        "data": response.json()
-    }
+        "status": "OK",
+        "total_events": len(filtered_events),
+        "events": filtered_events
+}
     
     
 @app.route("/webhook", methods=["POST"])
