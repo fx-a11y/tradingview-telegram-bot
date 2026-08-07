@@ -23,9 +23,18 @@ def get_market_news():
     return response.json()
 
 def get_calendar():
-    url = f"https://financialmodelingprep.com/stable/economic-calendar?apikey={FMP_API_KEY}"
-    response = requests.get(url)
-    return response.json()
+    url = "https://financialmodelingprep.com/stable/economic-calendar"
+    
+    response = requests.get(
+        url,
+        params={"apikey": FMP_API_KEY},
+        timeout=15
+    )
+
+    return {
+        "status_code": response.status_code,
+        "response": response.text[:1000]
+    }
     
     
 @app.route("/webhook", methods=["POST"])
