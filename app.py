@@ -25,37 +25,47 @@ def get_market_news():
 def get_calendar():
     url = "https://api.datasectors.com/api/calendar"
 
-    response = requests.get(
-        url,
-        headers={
-            "X-API-Key": DATASECTORS_API_KEY
-        },
-        timeout=15
+    headers = {
+        "Authorization": f"Bearer {DATASECTORS_API_KEY}"
+    }
+
+    response = requests.get(url, headers=headers, timeout=15)
+
+    if response.status_code != 200:
+        return {
+            "events": [],
+            "error": response.text,
+            "status_code": response.status_code
+        }
+
+    data = response.json()
+
+    # Ambil daftar event dari struktur DataSectors
+    events = (
+        data.get("data", {})
+            .get("data", {})
+            .get("data", [])
     )
 
-    response.raise_for_status()
 
-    result = response.json()
+def get_relevant_events(pair):
+    pair = pair.upper().replace("/", "")
 
-    # Data kalender berada di dalam data -> data
-    events = result.get("data", {}).get("data", [])
+    currencies = PAIR_CURRENCIES.get(pair, [])
 
-    # Mata uang yang berpengaruh terhadap pair kita
-    currencies = ["USD", "EUR", "GBP", "JPY"]
+    calendar = get_calendar()
+    events = calendar.get("events", [])
 
     filtered_events = []
 
     for event in events:
         currency = event.get("currencyCode")
+        volatility = str(event.get("volatility", "")).upper()
 
-        if currency in currencies:
+        if currency in currencies and volatility == "HIGH":
             filtered_events.append(event)
 
-    return {
-        "status": "OK",
-        "total_events": len(filtered_events),
-        "events": filtered_events
-}
+    return filtered_events
 
 from datetime import datetime, timezone, timedelta
 
