@@ -23,29 +23,29 @@ def get_market_news():
     return response.json()
 
 def get_calendar():
-    url = "https://api.datasectors.com/api/calendar"
+    try:
+        url = "https://api.datasectors.com/api/calendar"
 
-    headers = {
-        "Authorization": f"Bearer {DATASECTORS_API_KEY}"
-    }
-
-    response = requests.get(url, headers=headers, timeout=15)
-
-    if response.status_code != 200:
-        return {
-            "events": [],
-            "error": response.text,
-            "status_code": response.status_code
+        headers = {
+            "Authorization": f"Bearer {DATASECTORS_API_KEY}"
         }
 
-    data = response.json()
+        response = requests.get(
+            url,
+            headers=headers,
+            timeout=15
+        )
 
-    # Ambil daftar event dari struktur DataSectors
-    events = (
-        data.get("data", {})
-            .get("data", {})
-            .get("data", [])
-    )
+        return {
+            "status_code": response.status_code,
+            "response": response.text[:2000]
+        }
+
+    except Exception as e:
+        return {
+            "status_code": 500,
+            "error": str(e)
+        }
 
 
 def get_relevant_events(pair):
