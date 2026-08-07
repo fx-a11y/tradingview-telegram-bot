@@ -15,7 +15,7 @@ def get_forex_price(symbol="XAU/USD"):
     return response.json()
 
 MARKETAUX_API_KEY = os.getenv("MARKETAUX_API_KEY")
-FMP_API_KEY = os.getenv("FMP_API_KEY")
+DATASECTORS_API_KEY = os.getenv("DATASECTORS_API_KEY")
 
 def get_market_news():
     url = f"https://api.marketaux.com/v1/news/all?api_token={MARKETAUX_API_KEY}&symbols=USD,XAU,EUR,GBP,JPY&language=en&limit=5"
@@ -23,17 +23,19 @@ def get_market_news():
     return response.json()
 
 def get_calendar():
-    url = "https://financialmodelingprep.com/stable/economic-calendar"
-    
+    url = "https://api.datasectors.com/api/calendar"
+
     response = requests.get(
         url,
-        params={"apikey": FMP_API_KEY},
+        headers={
+            "X-API-Key": DATASECTORS_API_KEY
+        },
         timeout=15
     )
 
     return {
         "status_code": response.status_code,
-        "response": response.text[:1000]
+        "data": response.json()
     }
     
     
