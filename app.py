@@ -61,25 +61,6 @@ def get_calendar():
             }
 
 
-def get_relevant_events(pair):
-    pair = pair.upper().replace("/", "")
-
-    currencies = PAIR_CURRENCIES.get(pair, [])
-
-    calendar = get_calendar()
-    events = calendar.get("events", [])
-
-    filtered_events = []
-
-    for event in events:
-        currency = event.get("currencyCode")
-        volatility = str(event.get("volatility", "")).upper()
-
-        if currency in currencies and volatility == "HIGH":
-            filtered_events.append(event)
-
-    return filtered_events
-
 from datetime import datetime, timezone, timedelta
 
 PAIR_CURRENCIES = {
@@ -88,6 +69,7 @@ PAIR_CURRENCIES = {
     "GBPUSD": ["GBP", "USD"],
     "USDJPY": ["USD", "JPY"]
 }
+
 
 def get_relevant_events(pair):
     pair = pair.upper().replace("/", "")
@@ -100,7 +82,7 @@ def get_relevant_events(pair):
     relevant_events = []
 
     for event in events:
-        currency = event.get("currencyCode")
+        currency = str(event.get("currencyCode", "")).upper()
         volatility = str(event.get("volatility", "")).upper()
 
         if currency in currencies and volatility == "HIGH":
@@ -126,9 +108,10 @@ def is_news_pause(pair):
         except ValueError:
             continue
 
-        time_difference = abs((event_time - now).total_seconds())
+        time_difference = abs(
+            (event_time - now).total_seconds()
+        )
 
-        # 30 menit sebelum sampai 30 menit sesudah news
         if time_difference <= 30 * 60:
             return {
                 "pause": True,
@@ -141,7 +124,7 @@ def is_news_pause(pair):
     return {
         "pause": False,
         "reason": None
-}
+    }
     
 @app.route("/webhook", methods=["POST"])
 def webhook():
