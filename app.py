@@ -125,6 +125,47 @@ def is_news_pause(pair):
         "pause": False,
         "reason": None
     }
+
+@app.route("/pause-debug/<pair>")
+def pause_debug(pair):
+    events = get_relevant_events(pair)
+
+    now = datetime.now(timezone.utc)
+
+    result = []
+
+    for event in events:
+        date_utc = event.get("dateUtc")
+
+        if not date_utc:
+            continue
+
+        try:
+            event_time = datetime.fromisoformat(
+                date_utc.replace("Z", "+00:00")
+            )
+        except ValueError:
+            continue
+
+        difference_minutes = (
+            event_time - now
+        ).total_seconds() / 60
+
+        result.append({
+            "name": event.get("name"),
+            "currency": event.get("currencyCode"),
+            "volatility": event.get("volatility"),
+            "event_time": date_utc,
+            "minutes_to_news": round(difference_minutes, 2),
+            "inside_pause_window": abs(difference_minutes) <= 30
+        })
+
+    return jsonify({
+        "pair": pair.upper().replace("/", ""),
+        "server_time_utc": now.isoformat(),
+        "pause_window_minutes": 30,
+        "events": result
+    })
     
 @app.route("/webhook", methods=["POST"])
 def webhook():
