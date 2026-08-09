@@ -169,6 +169,29 @@ def is_news_pause(pair):
         "message": None
         }
 
+def process_signal(pair, signal_data):
+    # 1. Cek news pause terlebih dahulu
+    news = is_news_pause(pair)
+
+    if news["pause"]:
+        return {
+            "decision": "PAUSE",
+            "pair": pair,
+            "reason": news["reason"],
+            "currency": news["currency"],
+            "volatility": news["volatility"],
+            "event_time": news["event_time"],
+            "message": news["message"]
+        }
+
+    # 2. Kalau tidak ada news pause,
+    #    lanjutkan ke AI
+    return {
+        "decision": "ANALYZE",
+        "pair": pair,
+        "signal": signal_data
+        }
+
 @app.route("/pause-debug/<pair>")
 def pause_debug(pair):
     events = get_relevant_events(pair)
