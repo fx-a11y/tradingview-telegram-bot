@@ -16,6 +16,7 @@ def get_forex_price(symbol="XAU/USD"):
 
 MARKETAUX_API_KEY = os.getenv("MARKETAUX_API_KEY")
 DATASECTORS_API_KEY = os.getenv("DATASECTORS_API_KEY")
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 
 def get_market_news():
     url = f"https://api.marketaux.com/v1/news/all?api_token={MARKETAUX_API_KEY}&symbols=USD,XAU,EUR,GBP,JPY&language=en&limit=5"
@@ -169,8 +170,100 @@ def is_news_pause(pair):
         "message": None
         }
 
+def analyze_with_claude(pair, signal_data, price):
+    try:
+        url = "https://api.anthropic.com/v1/messages"
+
+        headers = {
+            "x-api-key": ANTHROPIC_API_KEY,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json"
+        }
+
+        prompt = f"""
+Kamu adalah AI trading analyst.
+
+Analisa market berikut:
+
+PAIR:
+{pair}
+
+HARGA:
+{price}
+
+DATA SIGNAL:
+{signal_data}
+
+Tugas:
+Tentukan hanya satu keputusan:
+
+BUY
+SELL
+NO TRADE
+
+Pertimbangkan:
+- arah signal
+- kondisi market
+- risiko false signal
+- jangan memaksakan entry
+
+Jawab dalam format JSON persis:
+
+{{
+  "decision": "BUY/SELL/NO TRADE",
+  "confidence": 0-100,
+  "reason": "alasan singkat"
+}}
+"""
+
+        payload = {
+            "model": "claude-sonnet-4-20250514",
+            "max_tokens": 500,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+        }
+
+        response = requests.post(
+            url,
+            headers=headers,
+            json=payload,
+            timeout=30
+        )
+
+        if response.status_code != 200:
+            return {
+                "decision": "NO TRADE",
+                "confidence": 0,
+                "reason": f"Claude API error: {response.text}"
+            }
+
+        result = response.json()
+
+        ai_text = result["content"][0]["text"]
+
+        import json
+
+        ai_result = json.loads(ai_text)
+
+        return {
+            "decision": ai_result.get("decision", "NO TRADE"),
+            "confidence": ai_result.get("confidence", 0),
+            "reason": ai_result.get("reason", "")
+        }
+
+    except Exception as e:
+        return {
+            "decision": "NO TRADE",
+            "confidence": 0,
+            "reason": f"AI error: {str(e)}"
+        }
+
 def process_signal(pair, signal_data):
-    # 1. Cek news pause terlebih dahulu
+    # 1. Cek news pause
     news = is_news_pause(pair)
 
     if news["pause"]:
@@ -181,15 +274,30 @@ def process_signal(pair, signal_data):
             "currency": news["currency"],
             "volatility": news["volatility"],
             "event_time": news["event_time"],
-            "message": news["message"]
+            "message": news.get("message", "High impact news detected")
         }
 
-    # 2. Kalau tidak ada news pause,
-    #    lanjutkan ke AI
+    # 2. Ambil harga
+    price_data = get_forex_price(
+        f"{pair[:3]}/{pair[3:]}"
+        if len(pair) == 6
+        else pair
+    )
+
+    # 3. Analisa Claude
+    ai_result = analyze_with_claude(
+        pair,
+        signal_data,
+        price_data
+    )
+
+    # 4. Return hasil AI
     return {
-        "decision": "ANALYZE",
+        "decision": ai_result["decision"],
         "pair": pair,
-        "signal": signal_data
+        "confidence": ai_result["confidence"],
+        "reason": ai_result["reason"],
+        "price": price_data
         }
 
 @app.route("/pause-debug/<pair>")
