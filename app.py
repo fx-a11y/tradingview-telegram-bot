@@ -36,15 +36,33 @@ def get_calendar():
             timeout=15
         )
 
-        return jsonify({
-            "status_code": response.status_code,
-            "raw_response": response.text[:10000]
-        })
+        if response.status_code != 200:
+            return {
+                "events": [],
+                "error": response.text,
+                "status_code": response.status_code
+            }
+
+        data = response.json()
+
+        # Format API: {"events": [...]}
+        events = data.get("events", [])
+
+        if not isinstance(events, list):
+            return {
+                "events": [],
+                "error": "Format calendar tidak sesuai: events bukan list"
+            }
+
+        return {
+            "events": events
+        }
 
     except Exception as e:
-        return jsonify({
+        return {
+            "events": [],
             "error": str(e)
-        })
+        }
 
 
 from datetime import datetime, timezone, timedelta
