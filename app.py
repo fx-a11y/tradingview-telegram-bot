@@ -235,18 +235,86 @@ def pause_debug(pair):
     
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    data = request.json
+    data = request.json or {}
 
-    price = get_forex_price("XAU/USD")
+    # Ambil symbol dari MT5/EA
+    pair = str(data.get("symbol", "")).upper()
 
-    text = f"""
-Alert:
-{data}
+    if not pair:
+        return {
+            "status": "error",
+            "message": "Symbol tidak ditemukan"
+        }, 400
 
-Harga XAUUSD:
+    # Format symbol untuk Twelve Data
+    symbol = pair
+
+    # Contoh:
+    # XAUUSD -> XAU/USD
+    # EURUSD -> EUR/USD
+    if len(symbol) == 6:
+        symbol = f"{symbol[:3]}/{symbol[3:]}"
+
+    # Ambil harga
+    price = get_forex_price(symbol)
+
+    # Proses signal
+    result = process_signal(
+        pair,
+        data
+    )
+
+    # =========================
+    # NEWS PAUSE
+    # =========================
+
+    if result["decision"] == "PAUSE":
+
+        text = f"""
+🔴 NEWS PAUSE
+
+Pair: {pair}
+
+Status: PAUSE
+
+News:
+{result["reason"]}
+
+Currency:
+{result["currency"]}
+
+Volatility:
+{result["volatility"]}
+
+Event Time:
+{result["event_time"]}
+
+Harga:
 {price}
 """
 
+    # =========================
+    # TIDAK ADA NEWS PAUSE
+    # =========================
+
+    else:
+
+        text = f"""
+📊 SIGNAL MASUK
+
+Pair: {pair}
+
+Alert:
+{data}
+
+Harga:
+{price}
+
+Status:
+MENUNGGU ANALISA AI
+"""
+
+    # Kirim Telegram
     requests.post(
         f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
         json={
@@ -255,7 +323,12 @@ Harga XAUUSD:
         }
     )
 
-    return "OK"
+    return {
+        "status": "OK",
+        "pair": pair,
+        "price": price,
+        "decision": result["decision"]
+    }
 @app.route("/")
 def home():
     return get_forex_price("XAU/USD")
