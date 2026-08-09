@@ -130,23 +130,44 @@ def is_news_pause(pair):
         except ValueError:
             continue
 
-        time_difference = abs(
-            (event_time - now).total_seconds()
-        )
+        difference_seconds = (
+            event_time - now
+        ).total_seconds()
+
+        time_difference = abs(difference_seconds)
 
         if time_difference <= 30 * 60:
+
+            minutes = round(time_difference / 60)
+
+            if difference_seconds > 0:
+                status = "BEFORE"
+                message = f"{minutes} menit sebelum berita"
+            else:
+                status = "AFTER"
+                message = f"{minutes} menit setelah berita"
+
             return {
                 "pause": True,
+                "status": status,
                 "reason": event.get("name"),
                 "currency": event.get("currencyCode"),
                 "volatility": event.get("volatility"),
-                "event_time": date_utc
+                "event_time": date_utc,
+                "minutes": minutes,
+                "message": message
             }
 
     return {
         "pause": False,
-        "reason": None
-    }
+        "status": None,
+        "reason": None,
+        "currency": None,
+        "volatility": None,
+        "event_time": None,
+        "minutes": None,
+        "message": None
+        }
 
 @app.route("/pause-debug/<pair>")
 def pause_debug(pair):
