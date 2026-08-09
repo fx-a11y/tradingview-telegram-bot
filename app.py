@@ -45,14 +45,15 @@ def get_calendar():
 
         data = response.json()
 
-        # DataSectors mengembalikan data event sebagai LIST
-        events = data.get("data", [])
+        # Ambil events langsung jika API mengembalikannya
+        if isinstance(data, list):
+            events = data
 
-        if not isinstance(events, list):
-            return {
-                "events": [],
-                "error": "Format calendar tidak sesuai: data bukan list"
-            }
+        elif isinstance(data, dict):
+            events = data.get("events", [])
+
+        else:
+            events = []
 
         return {
             "events": events
@@ -62,7 +63,7 @@ def get_calendar():
         return {
             "events": [],
             "error": str(e)
-        }
+    }
 
 
 from datetime import datetime, timezone, timedelta
