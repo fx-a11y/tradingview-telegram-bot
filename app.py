@@ -36,32 +36,14 @@ def get_calendar():
             timeout=15
         )
 
-        if response.status_code != 200:
-            return {
-                "events": [],
-                "error": response.text,
-                "status_code": response.status_code
-            }
-
-        data = response.json()
-
-        # Format DataSectors:
-        # {"events": [...]}
-        events = data.get("events", [])
-
-        if not isinstance(events, list):
-            return {
-                "events": [],
-                "error": "Format calendar tidak sesuai: events bukan list"
-            }
-
         return {
-            "events": events
+            "status_code": response.status_code,
+            "content_type": response.headers.get("content-type"),
+            "raw_response": response.text[:10000]
         }
 
     except Exception as e:
         return {
-            "events": [],
             "error": str(e)
         }
 
