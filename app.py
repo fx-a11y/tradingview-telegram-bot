@@ -48,7 +48,6 @@ def get_calendar():
         events = (
             data.get("data", {})
                 .get("data", {})
-                .get("data", [])
         )
 
         return {
