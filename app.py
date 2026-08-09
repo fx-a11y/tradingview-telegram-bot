@@ -45,25 +45,31 @@ def get_calendar():
 
         data = response.json()
 
-        # Struktur API:
-        # {
-        #   "success": true,
-        #   "data": {
-        #       "success": true,
-        #       "data": [...]
-        #   }
-        # }
+        # DEBUG
+        print("CALENDAR TYPE:", type(data))
+        print("CALENDAR KEYS:", data.keys())
 
+        inner = data.get("data")
+
+        print("INNER TYPE:", type(inner))
+
+        if isinstance(inner, dict):
+            print("INNER KEYS:", inner.keys())
+            print("EVENT DATA TYPE:", type(inner.get("data")))
+
+        # Ambil daftar event
         events = (
             data
             .get("data", {})
             .get("data", [])
         )
 
+        # Pastikan events berupa LIST
         if not isinstance(events, list):
             return {
                 "events": [],
-                "error": "Format calendar tidak sesuai: data bukan list"
+                "error": "Format calendar tidak sesuai",
+                "raw_type": str(type(events))
             }
 
         return {
