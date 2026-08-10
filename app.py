@@ -378,7 +378,7 @@ def webhook():
     # NEWS PAUSE
     # =========================
 
-    if result["decision"] == "PAUSE":
+        if result["decision"] == "PAUSE":
 
         text = f"""
 🔴 NEWS PAUSE
@@ -402,15 +402,12 @@ Event Time:
 Harga:
 {price}
 """
-
     # =========================
     # LANJUT KE CLAUDE AI
     # =========================
+    else:
 
-    
-else:
-
-    text = f"""
+        text = f"""
 🤖 CLAUDE AI SIGNAL
 
 Pair: {pair}
@@ -426,7 +423,6 @@ CONFIDENCE: {result.get("confidence")}%
 Reason:
 {result.get("reason")}
 """
-
     # Kirim Telegram
     requests.post(
         f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
