@@ -369,7 +369,7 @@ def webhook():
     price = get_forex_price(symbol)
 
     # Proses signal + cek news pause
-result = process_signal(
+    result = process_signal(
         pair,
         data
     )
@@ -429,14 +429,13 @@ Reason:
             "chat_id": CHAT_ID,
             "text": text
         }
-            )
+    )
 
     return {
-        "status": "OK",
-        "pair": pair,
-        "price": price,
-        "decision": result["decision"]
-    }
+        "status": "success",
+        "decision": result.get("decision")
+    }, 200
+    
 @app.route("/")
 def home():
     return get_forex_price("XAU/USD")
