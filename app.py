@@ -409,19 +409,21 @@ Harga:
 
     else:
 
-        text = f"""
-📊 SIGNAL MASUK
+    text = f"""
+🤖 CLAUDE AI SIGNAL
 
 Pair: {pair}
 
 Harga:
 {price}
 
-Data:
-{data}
+━━━━━━━━━━━━━━
+DECISION: {result.get("decision")}
+CONFIDENCE: {result.get("confidence")}%
+━━━━━━━━━━━━━━
 
-Status:
-ANALYZE BY CLAUDE AI
+Reason:
+{result.get("reason")}
 """
 
     # Kirim Telegram
