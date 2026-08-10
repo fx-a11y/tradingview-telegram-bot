@@ -273,32 +273,33 @@ def process_signal(pair, signal_data):
             "reason": news["reason"],
             "currency": news["currency"],
             "volatility": news["volatility"],
-            "event_time": news["event_time"],
-            "message": news.get("message", "High impact news detected")
+            "event_time": news["event_time"]
         }
 
-    # 2. Ambil harga
-    price_data = get_forex_price(
-        f"{pair[:3]}/{pair[3:]}"
-        if len(pair) == 6
-        else pair
+    # 2. Format symbol untuk Twelve Data
+    symbol = pair.upper().replace("/", "")
+
+    if len(symbol) == 6:
+        symbol = f"{symbol[:3]}/{symbol[3:]}"
+
+    # 3. Ambil harga
+    price = get_forex_price(symbol)
+
+    # 4. Kirim data ke Claude
+    ai = analyze_with_claude(
+        pair=pair,
+        signal_data=signal_data,
+        price=price
     )
 
-    # 3. Analisa Claude
-    ai_result = analyze_with_claude(
-        pair,
-        signal_data,
-        price_data
-    )
-
-    # 4. Return hasil AI
+    # 5. Return hasil Claude
     return {
-        "decision": ai_result["decision"],
+        "decision": ai["decision"],
+        "confidence": ai["confidence"],
+        "reason": ai["reason"],
         "pair": pair,
-        "confidence": ai_result["confidence"],
-        "reason": ai_result["reason"],
-        "price": price_data
-        }
+        "price": price
+    }
 
 @app.route("/pause-debug/<pair>")
 def pause_debug(pair):
