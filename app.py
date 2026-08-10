@@ -402,9 +402,7 @@ Event Time:
 Harga:
 {price}
 """
-    # =========================
-    # LANJUT KE CLAUDE AI
-    # =========================
+
     else:
 
         text = f"""
