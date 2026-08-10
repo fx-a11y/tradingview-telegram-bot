@@ -369,7 +369,7 @@ def webhook():
     price = get_forex_price(symbol)
 
     # Proses signal + cek news pause
-    result = process_signal(
+result = process_signal(
         pair,
         data
     )
@@ -378,7 +378,7 @@ def webhook():
     # NEWS PAUSE
     # =========================
 
-        if result["decision"] == "PAUSE":
+    if result["decision"] == "PAUSE":
 
         text = f"""
 🔴 NEWS PAUSE
@@ -421,6 +421,7 @@ CONFIDENCE: {result.get("confidence")}%
 Reason:
 {result.get("reason")}
 """
+
     # Kirim Telegram
     requests.post(
         f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
@@ -428,7 +429,7 @@ Reason:
             "chat_id": CHAT_ID,
             "text": text
         }
-    )
+            )
 
     return {
         "status": "OK",
