@@ -345,8 +345,8 @@ def pause_debug(pair):
 def webhook():
     data = request.json or {}
 
-    # Ambil symbol dari MT5/EA
-    pair = str(data.get("symbol", "")).upper()
+    # Ambil pair dari request/API
+    pair = str(data.get("symbol", "")).upper().replace("/", "")
 
     if not pair:
         return {
@@ -360,13 +360,14 @@ def webhook():
     # Contoh:
     # XAUUSD -> XAU/USD
     # EURUSD -> EUR/USD
+    # GBPUSD -> GBP/USD
     if len(symbol) == 6:
         symbol = f"{symbol[:3]}/{symbol[3:]}"
 
-    # Ambil harga
+    # Ambil harga terbaru
     price = get_forex_price(symbol)
 
-    # Proses signal
+    # Proses signal + cek news pause
     result = process_signal(
         pair,
         data
@@ -402,7 +403,7 @@ Harga:
 """
 
     # =========================
-    # TIDAK ADA NEWS PAUSE
+    # LANJUT KE CLAUDE AI
     # =========================
 
     else:
@@ -412,14 +413,14 @@ Harga:
 
 Pair: {pair}
 
-Alert:
-{data}
-
 Harga:
 {price}
 
+Data:
+{data}
+
 Status:
-MENUNGGU ANALISA AI
+ANALYZE BY CLAUDE AI
 """
 
     # Kirim Telegram
