@@ -447,9 +447,9 @@ def analyze_with_gemini(pair, signal_data, price):
         }
 
         prompt = f"""
-Kamu adalah AI trading analyst.
+Kamu adalah AI trading analyst profesional.
 
-Analisa market berikut secara objektif.
+Analisa {pair} berdasarkan data market dan indikator berikut.
 
 PAIR:
 {pair}
@@ -460,35 +460,118 @@ HARGA:
 DATA MARKET DAN INDIKATOR:
 {signal_data}
 
-Gunakan indikator berikut sebagai bagian utama analisis:
-- EMA 50 dan EMA 200 untuk menentukan trend
-- RSI 14 untuk momentum dan kondisi overbought/oversold
-- MACD dan histogram untuk momentum
-- ATR 14 untuk volatilitas
-- Support dan resistance untuk area harga
-- Signal market yang diberikan
+========================
+ATURAN ANALISIS
+========================
 
-Tugas:
-Tentukan hanya SATU keputusan:
+1. TREND
+Gunakan EMA50 dan EMA200.
+
+- EMA50 > EMA200 = bullish
+- EMA50 < EMA200 = bearish
+
+2. MOMENTUM
+Gunakan RSI14 dan MACD.
+
+RSI:
+- > 50 = momentum bullish
+- < 50 = momentum bearish
+- > 70 = overbought
+- < 30 = oversold
+
+MACD:
+- MACD > MACD Signal = bullish
+- MACD < MACD Signal = bearish
+
+3. SUPPORT DAN RESISTANCE
+
+Periksa posisi harga terhadap support dan resistance.
+
+Jangan melakukan SELL jika harga terlalu dekat dengan support.
+
+Jangan melakukan BUY jika harga terlalu dekat dengan resistance.
+
+Tujuannya menghindari:
+- false breakout
+- bounce dari support
+- rejection dari resistance
+
+4. KONFLIK INDIKATOR
+
+Jika trend, momentum dan MACD saling bertentangan,
+jangan memaksakan entry.
+
+Gunakan:
+
+NO TRADE
+
+5. KEPUTUSAN BUY
+
+BUY hanya jika:
+
+- Trend bullish
+- Momentum mendukung bullish
+- MACD mendukung bullish
+- Harga memiliki ruang yang cukup menuju resistance
+- Tidak ada risiko besar terkena rejection resistance
+
+6. KEPUTUSAN SELL
+
+SELL hanya jika:
+
+- Trend bearish
+- Momentum mendukung bearish
+- MACD mendukung bearish
+- Harga memiliki ruang yang cukup menuju support
+- Tidak ada risiko besar terkena bounce support
+
+7. NO TRADE
+
+Gunakan NO TRADE jika:
+
+- indikator bertentangan
+- momentum lemah
+- harga terlalu dekat support
+- harga terlalu dekat resistance
+- kondisi market tidak jelas
+- risiko false signal tinggi
+
+========================
+ATURAN CONFIDENCE
+========================
+
+Confidence 80-100:
+Bukti sangat kuat dan indikator searah.
+
+Confidence 65-79:
+Bukti cukup kuat tetapi masih ada risiko.
+
+Confidence 50-64:
+Bukti lemah.
+
+Confidence <50:
+Gunakan NO TRADE.
+
+Jangan memberikan BUY atau SELL hanya karena satu indikator.
+
+========================
+OUTPUT
+========================
+
+Tentukan hanya satu:
 
 BUY
 SELL
 NO TRADE
 
-Jangan memaksakan entry.
+Jawab JSON saja.
 
-BUY hanya jika bukti bullish cukup kuat.
-SELL hanya jika bukti bearish cukup kuat.
-NO TRADE jika indikator bertentangan, data tidak cukup, atau risiko false signal tinggi.
-
-Confidence harus mencerminkan kualitas bukti, bukan sekadar keyakinan.
-
-Jawab JSON saja dengan format:
+Format:
 
 {{
-  "decision": "BUY/SELL/NO TRADE",
-  "confidence": 0-100,
-  "reason": "alasan singkat berdasarkan indikator"
+    "decision": "BUY/SELL/NO TRADE",
+    "confidence": 0,
+    "reason": "jelaskan alasan berdasarkan EMA, RSI, MACD, support dan resistance"
 }}
 """
 
@@ -524,15 +607,48 @@ Jawab JSON saja dengan format:
 
         import json
 
-        # Bersihkan kemungkinan markdown ```json
-        ai_text = ai_text.replace("```json", "").replace("```", "").strip()
+        # Bersihkan markdown jika Gemini mengirim ```json
+        ai_text = (
+            ai_text
+            .replace("```json", "")
+            .replace("```", "")
+            .strip()
+        )
 
         ai_result = json.loads(ai_text)
 
+        decision = ai_result.get(
+            "decision",
+            "NO TRADE"
+        )
+
+        confidence = ai_result.get(
+            "confidence",
+            0
+        )
+
+        reason = ai_result.get(
+            "reason",
+            ""
+        )
+
+        # Pastikan keputusan valid
+        if decision not in [
+            "BUY",
+            "SELL",
+            "NO TRADE"
+        ]:
+            decision = "NO TRADE"
+
+        # Jika confidence di bawah 50,
+        # jangan izinkan entry
+        if confidence < 50:
+            decision = "NO TRADE"
+
         return {
-            "decision": ai_result.get("decision", "NO TRADE"),
-            "confidence": ai_result.get("confidence", 0),
-            "reason": ai_result.get("reason", "")
+            "decision": decision,
+            "confidence": confidence,
+            "reason": reason
         }
 
     except Exception as e:
