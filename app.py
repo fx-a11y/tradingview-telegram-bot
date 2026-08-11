@@ -14,6 +14,25 @@ def get_forex_price(symbol="XAU/USD"):
     response = requests.get(url)
     return response.json()
 
+def get_market_data(symbol="XAU/USD", interval="15min", outputsize=100):
+    url = "https://api.twelvedata.com/time_series"
+
+    params = {
+        "symbol": symbol,
+        "interval": interval,
+        "outputsize": outputsize,
+        "apikey": API_KEY
+    }
+
+    response = requests.get(url, params=params, timeout=30)
+
+    if response.status_code != 200:
+        return {
+            "error": response.text
+        }
+
+    return response.json()
+
 MARKETAUX_API_KEY = os.getenv("MARKETAUX_API_KEY")
 DATASECTORS_API_KEY = os.getenv("DATASECTORS_API_KEY")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
