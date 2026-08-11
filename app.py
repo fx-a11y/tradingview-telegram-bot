@@ -33,6 +33,47 @@ def get_market_data(symbol="XAU/USD", interval="15min", outputsize=100):
 
     return response.json()
 
+def get_multi_timeframe_data(symbol):
+    """
+    Mengambil data market dari 3 timeframe:
+    5M  = momentum / entry
+    15M = setup utama
+    1H  = trend utama
+    """
+
+    timeframes = {
+        "5min": 100,
+        "15min": 100,
+        "1h": 100
+    }
+
+    result = {}
+
+    for interval, outputsize in timeframes.items():
+
+        try:
+            data = get_market_data(
+                symbol=symbol,
+                interval=interval,
+                outputsize=outputsize
+            )
+
+            if "error" in data:
+                result[interval] = {
+                    "error": data["error"]
+                }
+                continue
+
+            result[interval] = data
+
+        except Exception as e:
+
+            result[interval] = {
+                "error": str(e)
+            }
+
+    return result
+
 def calculate_indicators(market_data):
     try:
         import pandas as pd
