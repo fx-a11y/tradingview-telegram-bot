@@ -17,6 +17,7 @@ def get_forex_price(symbol="XAU/USD"):
 MARKETAUX_API_KEY = os.getenv("MARKETAUX_API_KEY")
 DATASECTORS_API_KEY = os.getenv("DATASECTORS_API_KEY")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 def get_market_news():
     url = f"https://api.marketaux.com/v1/news/all?api_token={MARKETAUX_API_KEY}&symbols=USD,XAU,EUR,GBP,JPY&language=en&limit=5"
@@ -262,6 +263,103 @@ Jawab dalam format JSON persis:
             "reason": f"AI error: {str(e)}"
         }
 
+def analyze_with_gemini(pair, signal_data, price):
+    try:
+        url = (
+            "https://generativelanguage.googleapis.com/v1beta/"
+            "models/gemini-flash-latest:generateContent"
+        )
+
+        params = {
+            "key": GEMINI_API_KEY
+        }
+
+        prompt = f"""
+Kamu adalah AI trading analyst.
+
+Analisa market berikut:
+
+PAIR:
+{pair}
+
+HARGA:
+{price}
+
+DATA SIGNAL:
+{signal_data}
+
+Tugas:
+Tentukan hanya satu keputusan:
+
+BUY
+SELL
+NO TRADE
+
+Pertimbangkan:
+- arah signal
+- kondisi market
+- risiko false signal
+- jangan memaksakan entry
+
+Jawab dalam format JSON persis:
+
+{{
+  "decision": "BUY/SELL/NO TRADE",
+  "confidence": 0-100,
+  "reason": "alasan singkat"
+}}
+"""
+
+        payload = {
+            "contents": [
+                {
+                    "parts": [
+                        {
+                            "text": prompt
+                        }
+                    ]
+                }
+            ]
+        }
+
+        response = requests.post(
+            url,
+            params=params,
+            json=payload,
+            timeout=30
+        )
+
+        if response.status_code != 200:
+            return {
+                "decision": "NO TRADE",
+                "confidence": 0,
+                "reason": f"Gemini API error: {response.text}"
+            }
+
+        result = response.json()
+
+        ai_text = result["candidates"][0]["content"]["parts"][0]["text"]
+
+        import json
+
+        # Bersihkan kemungkinan markdown ```json
+        ai_text = ai_text.replace("```json", "").replace("```", "").strip()
+
+        ai_result = json.loads(ai_text)
+
+        return {
+            "decision": ai_result.get("decision", "NO TRADE"),
+            "confidence": ai_result.get("confidence", 0),
+            "reason": ai_result.get("reason", "")
+        }
+
+    except Exception as e:
+        return {
+            "decision": "NO TRADE",
+            "confidence": 0,
+            "reason": f"Gemini AI error: {str(e)}"
+        }
+        
 def process_signal(pair, signal_data):
     # 1. Cek news pause
     news = is_news_pause(pair)
@@ -285,14 +383,14 @@ def process_signal(pair, signal_data):
     # 3. Ambil harga
     price = get_forex_price(symbol)
 
-    # 4. Kirim data ke Claude
-    ai = analyze_with_claude(
+    # 4. Kirim data ke Gemini
+    ai = analyze_with_gemini(
         pair=pair,
         signal_data=signal_data,
         price=price
     )
 
-    # 5. Return hasil Claude
+    # 5. Return hasil Gemini
     return {
         "decision": ai["decision"],
         "confidence": ai["confidence"],
