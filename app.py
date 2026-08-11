@@ -227,6 +227,27 @@ def calculate_indicators(market_data):
             "error": f"Indicator error: {str(e)}"
         }
 
+def calculate_multi_timeframe_indicators(market_data):
+    """
+    Menghitung indikator untuk 5M, 15M dan 1H.
+    """
+
+    result = {}
+
+    for timeframe, data in market_data.items():
+
+        if "error" in data:
+            result[timeframe] = {
+                "error": data["error"]
+            }
+            continue
+
+        indicators = calculate_indicators(data)
+
+        result[timeframe] = indicators
+
+    return result
+
 MARKETAUX_API_KEY = os.getenv("MARKETAUX_API_KEY")
 DATASECTORS_API_KEY = os.getenv("DATASECTORS_API_KEY")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
@@ -564,58 +585,168 @@ SELL hanya jika:
 - Momentum mendukung bearish
 - MACD mendukung bearish
 - Harga memiliki ruang yang cukup menuju support
-- Tidak ada risiko besar terkena bounce support
+prompt = f"""
+Kamu adalah AI trading analyst profesional.
 
-7. NO TRADE
+Analisa {pair} menggunakan MULTI-TIMEFRAME ANALYSIS.
+
+PAIR:
+{pair}
+
+HARGA:
+{price}
+
+DATA MARKET DAN INDIKATOR:
+{signal_data}
+
+========================
+TIMEFRAME
+========================
+
+5M:
+Digunakan untuk melihat momentum dan kondisi entry.
+
+15M:
+Digunakan sebagai timeframe setup utama.
+
+1H:
+Digunakan sebagai trend utama market.
+
+========================
+INDIKATOR
+========================
+
+Gunakan:
+
+EMA50
+EMA200
+RSI14
+MACD
+MACD Signal
+MACD Histogram
+ATR14
+Support
+Resistance
+Trend
+
+========================
+ATURAN TREND
+========================
+
+1H adalah trend utama.
+
+Jika:
+EMA50 > EMA200
+maka trend = BULLISH.
+
+Jika:
+EMA50 < EMA200
+maka trend = BEARISH.
+
+========================
+ATURAN BUY
+========================
+
+BUY lebih valid jika:
+
+- Trend 1H bullish
+- Trend 15M bullish
+- Momentum 5M mendukung bullish
+- RSI tidak terlalu overbought
+- MACD mendukung bullish
+- Harga tidak terlalu dekat resistance
+- Tidak ada konflik besar antar timeframe
+
+Jika 1H bullish tetapi 15M dan 5M bearish,
+jangan memaksakan BUY.
+
+Gunakan NO TRADE.
+
+========================
+ATURAN SELL
+========================
+
+SELL lebih valid jika:
+
+- Trend 1H bearish
+- Trend 15M bearish
+- Momentum 5M mendukung bearish
+- RSI tidak terlalu oversold
+- MACD mendukung bearish
+- Harga tidak terlalu dekat support
+- Tidak ada konflik besar antar timeframe
+
+Jika 1H bearish tetapi 15M dan 5M bullish,
+jangan memaksakan SELL.
+
+Gunakan NO TRADE.
+
+========================
+SUPPORT / RESISTANCE
+========================
+
+Jangan SELL jika harga terlalu dekat support.
+
+Jangan BUY jika harga terlalu dekat resistance.
+
+Tujuannya menghindari:
+
+- bounce
+- rejection
+- false breakout
+- false breakdown
+
+========================
+NO TRADE
+========================
 
 Gunakan NO TRADE jika:
 
-- indikator bertentangan
+- timeframe saling bertentangan
 - momentum lemah
-- harga terlalu dekat support
-- harga terlalu dekat resistance
-- kondisi market tidak jelas
+- harga dekat support
+- harga dekat resistance
+- RSI terlalu ekstrem
+- MACD tidak mendukung
+- data tidak cukup
 - risiko false signal tinggi
 
+Jangan memaksakan entry.
+
 ========================
-ATURAN CONFIDENCE
+CONFIDENCE
 ========================
 
-Confidence 80-100:
-Bukti sangat kuat dan indikator searah.
+80-100:
+Semua timeframe sangat mendukung.
 
-Confidence 65-79:
-Bukti cukup kuat tetapi masih ada risiko.
+65-79:
+Setup cukup kuat tetapi masih ada risiko.
 
-Confidence 50-64:
-Bukti lemah.
+50-64:
+Setup lemah.
 
-Confidence <50:
-Gunakan NO TRADE.
-
-Jangan memberikan BUY atau SELL hanya karena satu indikator.
+Di bawah 50:
+NO TRADE.
 
 ========================
 OUTPUT
 ========================
 
-Tentukan hanya satu:
+Tentukan hanya:
 
 BUY
 SELL
 NO TRADE
 
-Jawab JSON saja.
-
-Format:
+Jawab JSON saja:
 
 {{
     "decision": "BUY/SELL/NO TRADE",
     "confidence": 0,
-    "reason": "jelaskan alasan berdasarkan EMA, RSI, MACD, support dan resistance"
+    "reason": "jelaskan analisis 1H, 15M, 5M, EMA, RSI, MACD dan posisi support/resistance"
 }}
 """
-
         payload = {
             "contents": [
                 {
@@ -700,7 +831,11 @@ Format:
         }
         
 def process_signal(pair, signal_data):
-    # 1. Cek news pause
+
+    # =========================
+    # 1. CEK NEWS PAUSE
+    # =========================
+
     news = is_news_pause(pair)
 
     if news["pause"]:
@@ -713,55 +848,112 @@ def process_signal(pair, signal_data):
             "event_time": news["event_time"]
         }
 
-    # 2. Format symbol untuk Twelve Data
+    # =========================
+    # 2. FORMAT SYMBOL
+    # =========================
+
     symbol = pair.upper().replace("/", "")
 
     if len(symbol) == 6:
         symbol = f"{symbol[:3]}/{symbol[3:]}"
 
-    # 3. Ambil harga terbaru
+    # =========================
+    # 3. HARGA TERBARU
+    # =========================
+
     price = get_forex_price(symbol)
 
-    # 4. Ambil 100 candle 15 menit
-    market_data = get_market_data(
-        symbol=symbol,
-        interval="15min",
-        outputsize=100
+    # =========================
+    # 4. AMBIL MULTI TIMEFRAME
+    # =========================
+
+    market_data = get_multi_timeframe_data(symbol)
+
+    # =========================
+    # 5. HITUNG INDIKATOR
+    # =========================
+
+    indicators = calculate_multi_timeframe_indicators(
+        market_data
     )
 
-    # 5. Hitung indikator teknikal
-    indicators = calculate_indicators(market_data)
+    # =========================
+    # 6. CEK ERROR
+    # =========================
 
-    # Cek jika indikator error
-    if "error" in indicators:
+    valid_timeframes = 0
+
+    for timeframe, data in indicators.items():
+
+        if "error" not in data:
+            valid_timeframes += 1
+
+    if valid_timeframes == 0:
+
         return {
             "decision": "NO TRADE",
             "confidence": 0,
-            "reason": indicators["error"],
+            "reason": "Tidak ada data indikator yang berhasil",
             "pair": pair,
             "price": price
         }
 
-    # 6. Gabungkan data signal + indikator
+    # =========================
+    # 7. GABUNGKAN DATA
+    # =========================
+
     signal_with_indicators = {
+
         "signal": signal_data,
-        "technical_indicators": indicators
+
+        "timeframes": {
+
+            "5M": indicators.get(
+                "5min",
+                {}
+            ),
+
+            "15M": indicators.get(
+                "15min",
+                {}
+            ),
+
+            "1H": indicators.get(
+                "1h",
+                {}
+            )
+        }
     }
 
-    # 7. Kirim ke Gemini
+    # =========================
+    # 8. GEMINI
+    # =========================
+
     ai = analyze_with_gemini(
+
         pair=pair,
+
         signal_data=signal_with_indicators,
+
         price=price
     )
 
-    # 8. Return hasil Gemini
+    # =========================
+    # 9. RETURN
+    # =========================
+
     return {
+
         "decision": ai["decision"],
+
         "confidence": ai["confidence"],
+
         "reason": ai["reason"],
+
         "pair": pair,
+
         "price": price,
+
         "indicators": indicators
         }
 
@@ -917,6 +1109,24 @@ def test_indicators():
         "symbol": symbol,
         "indicators": indicators
         }
+
+
+@app.route("/test-multi-timeframe", methods=["GET"])
+def test_multi_timeframe():
+
+    symbol = "XAU/USD"
+
+    market_data = get_multi_timeframe_data(symbol)
+
+    indicators = calculate_multi_timeframe_indicators(
+        market_data
+    )
+
+    return jsonify({
+        "status": "success",
+        "symbol": symbol,
+        "timeframes": indicators
+    })
     
 @app.route("/")
 def home():
