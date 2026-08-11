@@ -33,6 +33,159 @@ def get_market_data(symbol="XAU/USD", interval="15min", outputsize=100):
 
     return response.json()
 
+def calculate_indicators(market_data):
+    try:
+        import pandas as pd
+
+        values = market_data.get("values", [])
+
+        if len(values) < 50:
+            return {
+                "error": "Data candle tidak cukup untuk menghitung indikator"
+            }
+
+        df = pd.DataFrame(values)
+
+        # Pastikan urutan candle dari lama → terbaru
+        df = df.iloc[::-1].reset_index(drop=True)
+
+        df["close"] = pd.to_numeric(df["close"])
+        df["high"] = pd.to_numeric(df["high"])
+        df["low"] = pd.to_numeric(df["low"])
+
+        # =========================
+        # EMA
+        # =========================
+
+        df["ema50"] = df["close"].ewm(
+            span=50,
+            adjust=False
+        ).mean()
+
+        df["ema200"] = df["close"].ewm(
+            span=200,
+            adjust=False
+        ).mean()
+
+        # =========================
+        # RSI 14
+        # =========================
+
+        delta = df["close"].diff()
+
+        gain = delta.clip(lower=0)
+        loss = -delta.clip(upper=0)
+
+        avg_gain = gain.rolling(14).mean()
+        avg_loss = loss.rolling(14).mean()
+
+        rs = avg_gain / avg_loss
+
+        df["rsi14"] = 100 - (100 / (1 + rs))
+
+        # =========================
+        # MACD
+        # =========================
+
+        ema12 = df["close"].ewm(
+            span=12,
+            adjust=False
+        ).mean()
+
+        ema26 = df["close"].ewm(
+            span=26,
+            adjust=False
+        ).mean()
+
+        df["macd"] = ema12 - ema26
+
+        df["macd_signal"] = df["macd"].ewm(
+            span=9,
+            adjust=False
+        ).mean()
+
+        df["macd_histogram"] = (
+            df["macd"] - df["macd_signal"]
+        )
+
+        # =========================
+        # ATR 14
+        # =========================
+
+        previous_close = df["close"].shift(1)
+
+        tr1 = df["high"] - df["low"]
+
+        tr2 = (
+            df["high"] - previous_close
+        ).abs()
+
+        tr3 = (
+            df["low"] - previous_close
+        ).abs()
+
+        true_range = pd.concat(
+            [tr1, tr2, tr3],
+            axis=1
+        ).max(axis=1)
+
+        df["atr14"] = true_range.rolling(14).mean()
+
+        # =========================
+        # Support / Resistance
+        # =========================
+
+        support = df["low"].tail(20).min()
+
+        resistance = df["high"].tail(20).max()
+
+        # =========================
+        # Data terbaru
+        # =========================
+
+        latest = df.iloc[-1]
+
+        # =========================
+        # Trend
+        # =========================
+
+        if latest["ema50"] > latest["ema200"]:
+            trend = "BULLISH"
+        elif latest["ema50"] < latest["ema200"]:
+            trend = "BEARISH"
+        else:
+            trend = "SIDEWAYS"
+
+        return {
+            "price": float(latest["close"]),
+
+            "ema50": round(float(latest["ema50"]), 5),
+            "ema200": round(float(latest["ema200"]), 5),
+
+            "rsi14": round(float(latest["rsi14"]), 2),
+
+            "macd": round(float(latest["macd"]), 5),
+            "macd_signal": round(
+                float(latest["macd_signal"]), 5
+            ),
+            "macd_histogram": round(
+                float(latest["macd_histogram"]), 5
+            ),
+
+            "atr14": round(float(latest["atr14"]), 5),
+
+            "support": round(float(support), 5),
+            "resistance": round(float(resistance), 5),
+
+            "trend": trend
+        }
+
+    except Exception as e:
+
+        return {
+            "error": f"Indicator error: {str(e)}"
+        }
+
 MARKETAUX_API_KEY = os.getenv("MARKETAUX_API_KEY")
 DATASECTORS_API_KEY = os.getenv("DATASECTORS_API_KEY")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
