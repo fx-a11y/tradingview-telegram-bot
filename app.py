@@ -742,6 +742,24 @@ Reason:
         "status": "success",
         "decision": result.get("decision")
     }, 200
+
+@app.route("/test-indicators", methods=["GET"])
+def test_indicators():
+    symbol = "XAU/USD"
+
+    market_data = get_market_data(
+        symbol=symbol,
+        interval="15min",
+        outputsize=100
+    )
+
+    indicators = calculate_indicators(market_data)
+
+    return {
+        "status": "success",
+        "symbol": symbol,
+        "indicators": indicators
+        }
     
 @app.route("/")
 def home():
