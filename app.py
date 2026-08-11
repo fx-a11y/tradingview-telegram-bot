@@ -449,7 +449,7 @@ def analyze_with_gemini(pair, signal_data, price):
         prompt = f"""
 Kamu adalah AI trading analyst.
 
-Analisa market berikut:
+Analisa market berikut secara objektif.
 
 PAIR:
 {pair}
@@ -457,28 +457,38 @@ PAIR:
 HARGA:
 {price}
 
-DATA SIGNAL:
+DATA MARKET DAN INDIKATOR:
 {signal_data}
 
+Gunakan indikator berikut sebagai bagian utama analisis:
+- EMA 50 dan EMA 200 untuk menentukan trend
+- RSI 14 untuk momentum dan kondisi overbought/oversold
+- MACD dan histogram untuk momentum
+- ATR 14 untuk volatilitas
+- Support dan resistance untuk area harga
+- Signal market yang diberikan
+
 Tugas:
-Tentukan hanya satu keputusan:
+Tentukan hanya SATU keputusan:
 
 BUY
 SELL
 NO TRADE
 
-Pertimbangkan:
-- arah signal
-- kondisi market
-- risiko false signal
-- jangan memaksakan entry
+Jangan memaksakan entry.
 
-Jawab dalam format JSON persis:
+BUY hanya jika bukti bullish cukup kuat.
+SELL hanya jika bukti bearish cukup kuat.
+NO TRADE jika indikator bertentangan, data tidak cukup, atau risiko false signal tinggi.
+
+Confidence harus mencerminkan kualitas bukti, bukan sekadar keyakinan.
+
+Jawab JSON saja dengan format:
 
 {{
   "decision": "BUY/SELL/NO TRADE",
   "confidence": 0-100,
-  "reason": "alasan singkat"
+  "reason": "alasan singkat berdasarkan indikator"
 }}
 """
 
@@ -552,24 +562,51 @@ def process_signal(pair, signal_data):
     if len(symbol) == 6:
         symbol = f"{symbol[:3]}/{symbol[3:]}"
 
-    # 3. Ambil harga
+    # 3. Ambil harga terbaru
     price = get_forex_price(symbol)
 
-    # 4. Kirim data ke Gemini
+    # 4. Ambil 100 candle 15 menit
+    market_data = get_market_data(
+        symbol=symbol,
+        interval="15min",
+        outputsize=100
+    )
+
+    # 5. Hitung indikator teknikal
+    indicators = calculate_indicators(market_data)
+
+    # Cek jika indikator error
+    if "error" in indicators:
+        return {
+            "decision": "NO TRADE",
+            "confidence": 0,
+            "reason": indicators["error"],
+            "pair": pair,
+            "price": price
+        }
+
+    # 6. Gabungkan data signal + indikator
+    signal_with_indicators = {
+        "signal": signal_data,
+        "technical_indicators": indicators
+    }
+
+    # 7. Kirim ke Gemini
     ai = analyze_with_gemini(
         pair=pair,
-        signal_data=signal_data,
+        signal_data=signal_with_indicators,
         price=price
     )
 
-    # 5. Return hasil Gemini
+    # 8. Return hasil Gemini
     return {
         "decision": ai["decision"],
         "confidence": ai["confidence"],
         "reason": ai["reason"],
         "pair": pair,
-        "price": price
-    }
+        "price": price,
+        "indicators": indicators
+        }
 
 @app.route("/pause-debug/<pair>")
 def pause_debug(pair):
