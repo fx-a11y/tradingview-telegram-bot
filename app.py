@@ -994,6 +994,80 @@ def test_multi_timeframe():
         "symbol": symbol,
         "timeframes": indicators
     })
+
+@app.route("/test-webhook/<pair>", methods=["GET"])
+def test_webhook(pair):
+
+    pair = pair.upper().replace("/", "")
+
+    # Proses signal
+    result = process_signal(
+        pair,
+        {
+            "source": "MOBILE_TEST",
+            "symbol": pair
+        }
+    )
+
+    # Kirim hasil ke Telegram
+    if result["decision"] == "PAUSE":
+
+        text = f"""
+🔴 NEWS PAUSE
+
+Pair: {pair}
+
+Status: PAUSE
+
+News:
+{result.get("reason")}
+
+Currency:
+{result.get("currency")}
+
+Volatility:
+{result.get("volatility")}
+
+Event Time:
+{result.get("event_time")}
+"""
+
+    else:
+
+        text = f"""
+🤖 CLAUDE AI SIGNAL
+
+Pair: {pair}
+
+Harga:
+{result.get("price")}
+
+━━━━━━━━━━━━━━
+DECISION: {result.get("decision")}
+CONFIDENCE: {result.get("confidence")}%
+━━━━━━━━━━━━━━
+
+Reason:
+{result.get("reason")}
+"""
+
+    telegram_response = requests.post(
+        f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
+        json={
+            "chat_id": CHAT_ID,
+            "text": text
+        },
+        timeout=15
+    )
+
+    return jsonify({
+        "status": "success",
+        "pair": pair,
+        "decision": result.get("decision"),
+        "confidence": result.get("confidence"),
+        "reason": result.get("reason"),
+        "telegram_status": telegram_response.status_code
+    })
     
 @app.route("/")
 def home():
