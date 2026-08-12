@@ -709,6 +709,15 @@ Jika NO TRADE:
                     decision = "NO TRADE"
 
                 # =========================
+                # REASON
+                # =========================
+
+                reason = ai_result.get(
+                   "reason",
+                   "Tidak ada alasan dari Gemini."
+                 )
+
+                # =========================
                 # CONFIDENCE
                 # =========================
 
