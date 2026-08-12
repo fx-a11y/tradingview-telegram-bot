@@ -498,21 +498,22 @@ Jawab dalam format JSON persis:
         }
 
 def analyze_with_gemini(pair, signal_data, price):
-    try:
+    import json
+    import time
 
-        url = (
-            "https://generativelanguage.googleapis.com/v1beta/"
-            "models/gemini-flash-latest:generateContent"
-        )
+    url = (
+        "https://generativelanguage.googleapis.com/v1beta/"
+        "models/gemini-flash-latest:generateContent"
+    )
 
-        params = {
-            "key": GEMINI_API_KEY
-        }
+    params = {
+        "key": GEMINI_API_KEY
+    }
 
-        prompt = f"""
+    prompt = f"""
 Kamu adalah AI trading analyst profesional.
 
-Analisa pair {pair} berdasarkan data market dan indikator yang diberikan.
+Analisa pair {pair} berdasarkan data market dan indikator.
 
 PAIR:
 {pair}
@@ -528,20 +529,19 @@ MULTI TIMEFRAME
 ========================
 
 5M:
-Digunakan untuk melihat momentum dan kondisi entry.
+Momentum dan kondisi entry.
 
 15M:
-Digunakan sebagai timeframe setup utama.
+Setup utama.
 
 1H:
-Digunakan sebagai trend utama market.
+Trend utama.
 
 ========================
 INDIKATOR
 ========================
 
 Gunakan:
-
 - EMA 50
 - EMA 200
 - RSI 14
@@ -554,149 +554,184 @@ Gunakan:
 - Trend
 
 ========================
-ATURAN ANALISIS
+ATURAN
 ========================
 
-1. TIMEFRAME 1H adalah penentu trend utama.
+BUY jika bukti bullish cukup kuat.
 
-2. TIMEFRAME 15M digunakan untuk melihat setup.
+SELL jika bukti bearish cukup kuat.
 
-3. TIMEFRAME 5M digunakan untuk melihat momentum entry.
-
-4. BUY hanya jika:
-- Trend 1H bullish
-- Setup 15M mendukung bullish
-- Momentum 5M mendukung bullish
-- MACD mendukung bullish
-- RSI tidak terlalu overbought
-- Harga tidak terlalu dekat resistance
-
-5. SELL hanya jika:
-- Trend 1H bearish
-- Setup 15M mendukung bearish
-- Momentum 5M mendukung bearish
-- MACD mendukung bearish
-- RSI tidak terlalu oversold
-- Harga tidak terlalu dekat support
-
-6. NO TRADE jika:
-- Timeframe saling bertentangan
-- Momentum tidak jelas
-- Harga terlalu dekat support
-- Harga terlalu dekat resistance
+NO TRADE jika:
+- timeframe bertentangan
+- momentum tidak jelas
+- harga terlalu dekat support
+- harga terlalu dekat resistance
 - RSI terlalu ekstrem
 - MACD tidak mendukung
-- Risiko false signal tinggi
-- Data tidak cukup
+- risiko false signal tinggi
+- data tidak cukup
+
+1H adalah trend utama.
+15M adalah setup.
+5M adalah momentum entry.
 
 Jangan memaksakan entry.
 
-Confidence harus berdasarkan kekuatan bukti dari semua timeframe.
-
-========================
-OUTPUT
-========================
-
-Jawab HANYA JSON.
-
-Format:
+Jawab HANYA JSON:
 
 {{
-    "decision": "BUY",
+    "decision": "BUY/SELL/NO TRADE",
     "confidence": 0,
-    "reason": "alasan singkat berdasarkan 1H, 15M dan 5M"
+    "reason": "alasan singkat berdasarkan 5M, 15M dan 1H"
 }}
-
-Decision hanya boleh:
-
-BUY
-SELL
-NO TRADE
 """
 
-        payload = {
-            "contents": [
-                {
-                    "parts": [
-                        {
-                            "text": prompt
-                        }
-                    ]
+    payload = {
+        "contents": [
+            {
+                "parts": [
+                    {
+                        "text": prompt
+                    }
+                ]
+            }
+        ]
+    }
+
+    # =================================
+    # GEMINI RETRY
+    # =================================
+
+    max_retries = 3
+
+    for attempt in range(max_retries):
+
+        try:
+
+            response = requests.post(
+                url,
+                params=params,
+                json=payload,
+                timeout=30
+            )
+
+            # =========================
+            # BERHASIL
+            # =========================
+
+            if response.status_code == 200:
+
+                result = response.json()
+
+                ai_text = (
+                    result["candidates"][0]
+                    ["content"]["parts"][0]["text"]
+                )
+
+                ai_text = (
+                    ai_text
+                    .replace("```json", "")
+                    .replace("```", "")
+                    .strip()
+                )
+
+                ai_result = json.loads(ai_text)
+
+                decision = ai_result.get(
+                    "decision",
+                    "NO TRADE"
+                )
+
+                confidence = ai_result.get(
+                    "confidence",
+                    0
+                )
+
+                reason = ai_result.get(
+                    "reason",
+                    ""
+                )
+
+                # Validasi decision
+
+                if decision not in [
+                    "BUY",
+                    "SELL",
+                    "NO TRADE"
+                ]:
+                    decision = "NO TRADE"
+
+                return {
+                    "decision": decision,
+                    "confidence": confidence,
+                    "reason": reason
                 }
-            ]
-        }
 
-        response = requests.post(
-            url,
-            params=params,
-            json=payload,
-            timeout=30
-        )
+            # =========================
+            # GEMINI 503
+            # =========================
 
-        if response.status_code != 200:
+            if response.status_code == 503:
+
+                if attempt < max_retries - 1:
+
+                    wait_time = 2 ** attempt
+
+                    print(
+                        f"Gemini 503. "
+                        f"Retry {attempt + 1} "
+                        f"setelah {wait_time} detik..."
+                    )
+
+                    time.sleep(wait_time)
+
+                    continue
+
+                return {
+                    "decision": "NO TRADE",
+                    "confidence": 0,
+                    "reason": (
+                        "Gemini sedang mengalami "
+                        "high demand setelah 3 percobaan."
+                    )
+                }
+
+            # =========================
+            # ERROR LAIN
+            # =========================
+
             return {
                 "decision": "NO TRADE",
                 "confidence": 0,
-                "reason": f"Gemini API error: {response.text}"
+                "reason": (
+                    f"Gemini API error: "
+                    f"{response.text}"
+                )
             }
 
-        result = response.json()
+        except Exception as e:
 
-        ai_text = (
-            result["candidates"][0]
-            ["content"]["parts"][0]["text"]
-        )
+            if attempt < max_retries - 1:
 
-        # Bersihkan markdown JSON
-        ai_text = (
-            ai_text
-            .replace("```json", "")
-            .replace("```", "")
-            .strip()
-        )
+                wait_time = 2 ** attempt
 
-        import json
+                print(
+                    f"Gemini connection error. "
+                    f"Retry setelah {wait_time} detik..."
+                )
 
-        ai_result = json.loads(ai_text)
+                time.sleep(wait_time)
 
-        decision = ai_result.get(
-            "decision",
-            "NO TRADE"
-        )
+                continue
 
-        confidence = ai_result.get(
-            "confidence",
-            0
-        )
+            return {
+                "decision": "NO TRADE",
+                "confidence": 0,
+                "reason": f"Gemini AI error: {str(e)}"
+    }
 
-        reason = ai_result.get(
-            "reason",
-            ""
-        )
 
-        # Validasi keputusan
-        if decision not in [
-            "BUY",
-            "SELL",
-            "NO TRADE"
-        ]:
-            decision = "NO TRADE"
-
-        return {
-            "decision": decision,
-            "confidence": confidence,
-            "reason": reason
-        }
-
-    except Exception as e:
-
-        return {
-            "decision": "NO TRADE",
-            "confidence": 0,
-            "reason": f"Gemini AI error: {str(e)}"
-        }
-
-        
+                
 def process_signal(pair, signal_data):
 
     # =========================
