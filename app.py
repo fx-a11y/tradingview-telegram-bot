@@ -519,7 +519,7 @@ HARGA:
 DATA MARKET:
 {signal_data}
 
-HIRARKI:
+HIRARKI TIMEFRAME:
 1H = trend utama
 15M = setup
 5M = entry dan momentum
@@ -540,23 +540,49 @@ ATURAN SELL:
 - RSI tidak terlalu oversold
 - Harga tidak terlalu dekat support
 
-Pilih NO TRADE jika timeframe bertentangan,
-momentum lemah, RSI ekstrem, atau risiko terlalu tinggi.
+ATURAN NO TRADE:
+- Timeframe saling bertentangan
+- Momentum lemah
+- RSI terlalu ekstrem
+- Risiko terlalu tinggi
+- Belum ada konfirmasi entry
+- Jangan memaksakan BUY atau SELL
 
-Jangan memaksakan entry.
+CONFIDENCE:
+- Berikan angka 0 sampai 100.
+- Confidence harus selalu berupa angka.
+- Jangan mengembalikan confidence kosong.
+- Confidence menunjukkan seberapa kuat keputusan yang kamu ambil.
+- Jika NO TRADE karena setup belum terkonfirmasi, tetap berikan confidence berdasarkan keyakinan bahwa keputusan NO TRADE benar.
 
-Jawab HANYA JSON:
+PENTING:
+- Jangan memaksakan entry.
+- Jangan membuat data market.
+- Gunakan hanya data yang diberikan.
+- Jawab HANYA JSON valid.
+- Jangan gunakan markdown.
+- Jangan gunakan ```json.
+
+FORMAT JSON WAJIB:
 
 {{
-    "decision": "BUY/SELL/NO TRADE",
-    "confidence": 0,
-    "entry": 0,
-    "stop_loss": 0,
-    "take_profit_1": 0,
-    "take_profit_2": 0,
-    "risk_reward": 0,
+    "decision": "BUY",
+    "confidence": 75,
+    "entry": 4421.0,
+    "stop_loss": 4410.0,
+    "take_profit_1": 4435.0,
+    "take_profit_2": 4450.0,
+    "risk_reward": 1.5,
     "reason": "alasan singkat"
 }}
+
+Decision hanya boleh:
+BUY
+SELL
+NO TRADE
+
+Jika decision = NO TRADE, entry, stop_loss, take_profit_1,
+take_profit_2 dan risk_reward boleh bernilai 0.
 """
 
     payload = {
@@ -591,19 +617,28 @@ Jawab HANYA JSON:
                     ["content"]["parts"][0]["text"]
                 )
 
-                ai_text = (
-                    ai_text
-                    .replace("```json", "")
-                    .replace("```", "")
-                    .strip()
-                )
+                # Bersihkan markdown jika Gemini tetap mengirimnya
+                ai_text = ai_text.strip()
+
+                if ai_text.startswith("```"):
+                    ai_text = ai_text.replace(
+                        "```json", ""
+                    ).replace(
+                        "```", ""
+                    ).strip()
 
                 ai_result = json.loads(ai_text)
 
-                decision = ai_result.get(
-                    "decision",
-                    "NO TRADE"
-                )
+                # =========================
+                # DECISION
+                # =========================
+
+                decision = str(
+                    ai_result.get(
+                        "decision",
+                        "NO TRADE"
+                    )
+                ).upper().strip()
 
                 if decision not in [
                     "BUY",
@@ -612,30 +647,73 @@ Jawab HANYA JSON:
                 ]:
                     decision = "NO TRADE"
 
+                # =========================
+                # CONFIDENCE
+                # =========================
+
+                confidence = ai_result.get(
+                    "confidence",
+                    0
+                )
+
+                try:
+                    confidence = float(confidence)
+                except:
+                    confidence = 0
+
+                # Batasi confidence 0-100
+                confidence = max(
+                    0,
+                    min(100, confidence)
+                )
+
+                # Jika berupa 75.0 tampil sebagai 75
+                if confidence.is_integer():
+                    confidence = int(confidence)
+
+                # =========================
+                # RETURN
+                # =========================
+
                 return {
                     "decision": decision,
-                    "confidence": ai_result.get(
-                        "confidence", 0
-                    ),
+
+                    "confidence": confidence,
+
                     "entry": ai_result.get(
-                        "entry", 0
+                        "entry",
+                        0
                     ),
+
                     "stop_loss": ai_result.get(
-                        "stop_loss", 0
+                        "stop_loss",
+                        0
                     ),
+
                     "take_profit_1": ai_result.get(
-                        "take_profit_1", 0
+                        "take_profit_1",
+                        0
                     ),
+
                     "take_profit_2": ai_result.get(
-                        "take_profit_2", 0
+                        "take_profit_2",
+                        0
                     ),
+
                     "risk_reward": ai_result.get(
-                        "risk_reward", 0
+                        "risk_reward",
+                        0
                     ),
+
                     "reason": ai_result.get(
-                        "reason", ""
+                        "reason",
+                        "Tidak ada alasan dari Gemini."
                     )
                 }
+
+            # =========================
+            # GEMINI 503
+            # =========================
 
             if response.status_code == 503:
 
@@ -646,12 +724,26 @@ Jawab HANYA JSON:
                 return {
                     "decision": "NO TRADE",
                     "confidence": 0,
+                    "entry": 0,
+                    "stop_loss": 0,
+                    "take_profit_1": 0,
+                    "take_profit_2": 0,
+                    "risk_reward": 0,
                     "reason": "Gemini sedang high demand."
                 }
+
+            # =========================
+            # API ERROR
+            # =========================
 
             return {
                 "decision": "NO TRADE",
                 "confidence": 0,
+                "entry": 0,
+                "stop_loss": 0,
+                "take_profit_1": 0,
+                "take_profit_2": 0,
+                "risk_reward": 0,
                 "reason": f"Gemini API error: {response.text}"
             }
 
@@ -664,12 +756,16 @@ Jawab HANYA JSON:
             return {
                 "decision": "NO TRADE",
                 "confidence": 0,
+                "entry": 0,
+                "stop_loss": 0,
+                "take_profit_1": 0,
+                "take_profit_2": 0,
+                "risk_reward": 0,
                 "reason": f"Gemini AI error: {str(e)}"
-    }
-
-
-
-                
+                        }
+ 
+ 
+              
 def process_signal(pair, signal_data):
 
     # =========================
