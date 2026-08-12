@@ -880,18 +880,52 @@ def process_signal(pair, signal_data):
 
     return {
 
-        "decision": ai["decision"],
+    "decision": ai.get(
+        "decision",
+        "NO TRADE"
+    ),
 
-        "confidence": ai["confidence"],
+    "confidence": ai.get(
+        "confidence",
+        0
+    ),
 
-        "reason": ai["reason"],
+    "entry": ai.get(
+        "entry",
+        0
+    ),
 
-        "pair": pair,
+    "stop_loss": ai.get(
+        "stop_loss",
+        0
+    ),
 
-        "price": price,
+    "take_profit_1": ai.get(
+        "take_profit_1",
+        0
+    ),
 
-        "indicators": indicators
-        }
+    "take_profit_2": ai.get(
+        "take_profit_2",
+        0
+    ),
+
+    "risk_reward": ai.get(
+        "risk_reward",
+        0
+    ),
+
+    "reason": ai.get(
+        "reason",
+        ""
+    ),
+
+    "pair": pair,
+
+    "price": price,
+
+    "indicators": indicators
+}
 
 @app.route("/pause-debug/<pair>")
 def pause_debug(pair):
