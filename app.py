@@ -1103,7 +1103,10 @@ def test_webhook(pair):
 
     pair = pair.upper().replace("/", "")
 
-    # Proses signal
+    # =========================
+    # 1. PROSES SIGNAL
+    # =========================
+
     result = process_signal(
         pair,
         {
@@ -1112,47 +1115,75 @@ def test_webhook(pair):
         }
     )
 
-    # Kirim hasil ke Telegram
+    # =========================
+    # 2. NEWS PAUSE
+    # =========================
+
     if result["decision"] == "PAUSE":
 
         text = f"""
-        🔴 NEWS PAUSE
+🔴 NEWS PAUSE
 
 Pair: {pair}
 
 Status: PAUSE
 
 News:
-{result.get("reason")}
+{result.get("reason", "")}
 
 Currency:
-{result.get("currency")}
+{result.get("currency", "")}
 
 Volatility:
-{result.get("volatility")}
+{result.get("volatility", "")}
 
 Event Time:
-{result.get("event_time")}
+{result.get("event_time", "")}
 """
+
+    # =========================
+    # 3. GEMINI SIGNAL
+    # =========================
 
     else:
 
         text = f"""
-🤖 CLAUDE AI SIGNAL
+🤖 GEMINI AI SIGNAL
 
 Pair: {pair}
 
 Harga:
-{result.get("price")}
+{result.get("price", "")}
 
 ━━━━━━━━━━━━━━
-DECISION: {result.get("decision")}
-CONFIDENCE: {result.get("confidence")}%
+DECISION: {result.get("decision", "NO TRADE")}
+CONFIDENCE: {result.get("confidence", 0)}%
+━━━━━━━━━━━━━━
+
+ENTRY:
+{result.get("entry", 0)}
+
+STOP LOSS:
+{result.get("stop_loss", 0)}
+
+TAKE PROFIT 1:
+{result.get("take_profit_1", 0)}
+
+TAKE PROFIT 2:
+{result.get("take_profit_2", 0)}
+
+RISK / REWARD:
+{result.get("risk_reward", 0)}
+
 ━━━━━━━━━━━━━━
 
 Reason:
-{result.get("reason")}
+{result.get("reason", "")}
 """
+
+    # =========================
+    # 4. KIRIM TELEGRAM
+    # =========================
 
     telegram_response = requests.post(
         f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
@@ -1163,12 +1194,56 @@ Reason:
         timeout=15
     )
 
+    # =========================
+    # 5. RESPONSE TEST
+    # =========================
+
     return jsonify({
+
         "status": "success",
+
         "pair": pair,
-        "decision": result.get("decision"),
-        "confidence": result.get("confidence"),
-        "reason": result.get("reason"),
+
+        "decision": result.get(
+            "decision",
+            "NO TRADE"
+        ),
+
+        "confidence": result.get(
+            "confidence",
+            0
+        ),
+
+        "entry": result.get(
+            "entry",
+            0
+        ),
+
+        "stop_loss": result.get(
+            "stop_loss",
+            0
+        ),
+
+        "take_profit_1": result.get(
+            "take_profit_1",
+            0
+        ),
+
+        "take_profit_2": result.get(
+            "take_profit_2",
+            0
+        ),
+
+        "risk_reward": result.get(
+            "risk_reward",
+            0
+        ),
+
+        "reason": result.get(
+            "reason",
+            ""
+        ),
+
         "telegram_status": telegram_response.status_code
     })
     
