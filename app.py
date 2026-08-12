@@ -499,6 +499,7 @@ Jawab dalam format JSON persis:
 
 def analyze_with_gemini(pair, signal_data, price):
     try:
+
         url = (
             "https://generativelanguage.googleapis.com/v1beta/"
             "models/gemini-flash-latest:generateContent"
@@ -511,7 +512,7 @@ def analyze_with_gemini(pair, signal_data, price):
         prompt = f"""
 Kamu adalah AI trading analyst profesional.
 
-Analisa {pair} berdasarkan data market dan indikator berikut.
+Analisa pair {pair} berdasarkan data market dan indikator yang diberikan.
 
 PAIR:
 {pair}
@@ -523,84 +524,7 @@ DATA MARKET DAN INDIKATOR:
 {signal_data}
 
 ========================
-ATURAN ANALISIS
-========================
-
-1. TREND
-Gunakan EMA50 dan EMA200.
-
-- EMA50 > EMA200 = bullish
-- EMA50 < EMA200 = bearish
-
-2. MOMENTUM
-Gunakan RSI14 dan MACD.
-
-RSI:
-- > 50 = momentum bullish
-- < 50 = momentum bearish
-- > 70 = overbought
-- < 30 = oversold
-
-MACD:
-- MACD > MACD Signal = bullish
-- MACD < MACD Signal = bearish
-
-3. SUPPORT DAN RESISTANCE
-
-Periksa posisi harga terhadap support dan resistance.
-
-Jangan melakukan SELL jika harga terlalu dekat dengan support.
-
-Jangan melakukan BUY jika harga terlalu dekat dengan resistance.
-
-Tujuannya menghindari:
-- false breakout
-- bounce dari support
-- rejection dari resistance
-
-4. KONFLIK INDIKATOR
-
-Jika trend, momentum dan MACD saling bertentangan,
-jangan memaksakan entry.
-
-Gunakan:
-
-NO TRADE
-
-5. KEPUTUSAN BUY
-
-BUY hanya jika:
-
-- Trend bullish
-- Momentum mendukung bullish
-- MACD mendukung bullish
-- Harga memiliki ruang yang cukup menuju resistance
-- Tidak ada risiko besar terkena rejection resistance
-
-6. KEPUTUSAN SELL
-
-SELL hanya jika:
-
-- Trend bearish
-- Momentum mendukung bearish
-- MACD mendukung bearish
-- Harga memiliki ruang yang cukup menuju support
-prompt = f"""
-Kamu adalah AI trading analyst profesional.
-
-Analisa {pair} menggunakan MULTI-TIMEFRAME ANALYSIS.
-
-PAIR:
-{pair}
-
-HARGA:
-{price}
-
-DATA MARKET DAN INDIKATOR:
-{signal_data}
-
-========================
-TIMEFRAME
+MULTI TIMEFRAME
 ========================
 
 5M:
@@ -618,135 +542,78 @@ INDIKATOR
 
 Gunakan:
 
-EMA50
-EMA200
-RSI14
-MACD
-MACD Signal
-MACD Histogram
-ATR14
-Support
-Resistance
-Trend
+- EMA 50
+- EMA 200
+- RSI 14
+- MACD
+- MACD Signal
+- MACD Histogram
+- ATR 14
+- Support
+- Resistance
+- Trend
 
 ========================
-ATURAN TREND
+ATURAN ANALISIS
 ========================
 
-1H adalah trend utama.
+1. TIMEFRAME 1H adalah penentu trend utama.
 
-Jika:
-EMA50 > EMA200
-maka trend = BULLISH.
+2. TIMEFRAME 15M digunakan untuk melihat setup.
 
-Jika:
-EMA50 < EMA200
-maka trend = BEARISH.
+3. TIMEFRAME 5M digunakan untuk melihat momentum entry.
 
-========================
-ATURAN BUY
-========================
-
-BUY lebih valid jika:
-
+4. BUY hanya jika:
 - Trend 1H bullish
-- Trend 15M bullish
+- Setup 15M mendukung bullish
 - Momentum 5M mendukung bullish
-- RSI tidak terlalu overbought
 - MACD mendukung bullish
+- RSI tidak terlalu overbought
 - Harga tidak terlalu dekat resistance
-- Tidak ada konflik besar antar timeframe
 
-Jika 1H bullish tetapi 15M dan 5M bearish,
-jangan memaksakan BUY.
-
-Gunakan NO TRADE.
-
-========================
-ATURAN SELL
-========================
-
-SELL lebih valid jika:
-
+5. SELL hanya jika:
 - Trend 1H bearish
-- Trend 15M bearish
+- Setup 15M mendukung bearish
 - Momentum 5M mendukung bearish
-- RSI tidak terlalu oversold
 - MACD mendukung bearish
+- RSI tidak terlalu oversold
 - Harga tidak terlalu dekat support
-- Tidak ada konflik besar antar timeframe
 
-Jika 1H bearish tetapi 15M dan 5M bullish,
-jangan memaksakan SELL.
-
-Gunakan NO TRADE.
-
-========================
-SUPPORT / RESISTANCE
-========================
-
-Jangan SELL jika harga terlalu dekat support.
-
-Jangan BUY jika harga terlalu dekat resistance.
-
-Tujuannya menghindari:
-
-- bounce
-- rejection
-- false breakout
-- false breakdown
-
-========================
-NO TRADE
-========================
-
-Gunakan NO TRADE jika:
-
-- timeframe saling bertentangan
-- momentum lemah
-- harga dekat support
-- harga dekat resistance
+6. NO TRADE jika:
+- Timeframe saling bertentangan
+- Momentum tidak jelas
+- Harga terlalu dekat support
+- Harga terlalu dekat resistance
 - RSI terlalu ekstrem
 - MACD tidak mendukung
-- data tidak cukup
-- risiko false signal tinggi
+- Risiko false signal tinggi
+- Data tidak cukup
 
 Jangan memaksakan entry.
 
-========================
-CONFIDENCE
-========================
-
-80-100:
-Semua timeframe sangat mendukung.
-
-65-79:
-Setup cukup kuat tetapi masih ada risiko.
-
-50-64:
-Setup lemah.
-
-Di bawah 50:
-NO TRADE.
+Confidence harus berdasarkan kekuatan bukti dari semua timeframe.
 
 ========================
 OUTPUT
 ========================
 
-Tentukan hanya:
+Jawab HANYA JSON.
+
+Format:
+
+{{
+    "decision": "BUY",
+    "confidence": 0,
+    "reason": "alasan singkat berdasarkan 1H, 15M dan 5M"
+}}
+
+Decision hanya boleh:
 
 BUY
 SELL
 NO TRADE
-
-Jawab JSON saja:
-
-{{
-    "decision": "BUY/SELL/NO TRADE",
-    "confidence": 0,
-    "reason": "jelaskan analisis 1H, 15M, 5M, EMA, RSI, MACD dan posisi support/resistance"
-}}
 """
+
         payload = {
             "contents": [
                 {
@@ -775,17 +642,20 @@ Jawab JSON saja:
 
         result = response.json()
 
-        ai_text = result["candidates"][0]["content"]["parts"][0]["text"]
+        ai_text = (
+            result["candidates"][0]
+            ["content"]["parts"][0]["text"]
+        )
 
-        import json
-
-        # Bersihkan markdown jika Gemini mengirim ```json
+        # Bersihkan markdown JSON
         ai_text = (
             ai_text
             .replace("```json", "")
             .replace("```", "")
             .strip()
         )
+
+        import json
 
         ai_result = json.loads(ai_text)
 
@@ -804,17 +674,12 @@ Jawab JSON saja:
             ""
         )
 
-        # Pastikan keputusan valid
+        # Validasi keputusan
         if decision not in [
             "BUY",
             "SELL",
             "NO TRADE"
         ]:
-            decision = "NO TRADE"
-
-        # Jika confidence di bawah 50,
-        # jangan izinkan entry
-        if confidence < 50:
             decision = "NO TRADE"
 
         return {
@@ -824,11 +689,13 @@ Jawab JSON saja:
         }
 
     except Exception as e:
+
         return {
             "decision": "NO TRADE",
             "confidence": 0,
             "reason": f"Gemini AI error: {str(e)}"
         }
+
         
 def process_signal(pair, signal_data):
 
