@@ -501,10 +501,7 @@ def analyze_with_gemini(pair, signal_data, price):
     import json
     import time
 
-    url = (
-        "https://generativelanguage.googleapis.com/v1beta/"
-        "models/gemini-flash-latest:generateContent"
-    )
+    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent"
 
     params = {
         "key": GEMINI_API_KEY
@@ -513,7 +510,8 @@ def analyze_with_gemini(pair, signal_data, price):
     prompt = f"""
 Kamu adalah AI trading analyst profesional.
 
-Analisa {pair} menggunakan MULTI TIMEFRAME 5M, 15M, dan 1H.
+PAIR:
+{pair}
 
 HARGA:
 {price}
@@ -521,109 +519,31 @@ HARGA:
 DATA MARKET:
 {signal_data}
 
-================================
-HIRARKI TIMEFRAME
-================================
+HIRARKI:
+1H = trend utama
+15M = setup
+5M = entry dan momentum
 
-1H = TREND UTAMA
-15M = SETUP
-5M = ENTRY / MOMENTUM
+ATURAN BUY:
+- 1H bullish
+- 15M mendukung bullish
+- 5M mendukung bullish
+- MACD mendukung BUY
+- RSI tidak terlalu overbought
+- Harga tidak terlalu dekat resistance
 
-================================
-ATURAN BUY
-================================
+ATURAN SELL:
+- 1H bearish
+- 15M mendukung bearish
+- 5M mendukung bearish
+- MACD mendukung SELL
+- RSI tidak terlalu oversold
+- Harga tidak terlalu dekat support
 
-BUY hanya boleh dipertimbangkan jika:
-
-1. 1H menunjukkan BULLISH
-   EMA50 > EMA200
-
-2. 15M mendukung BULLISH
-   EMA50 > EMA200
-   atau terdapat konfirmasi bullish yang kuat.
-
-3. 5M menunjukkan momentum bullish.
-
-4. MACD mendukung arah BUY.
-
-5. RSI tidak terlalu overbought.
-
-6. Harga memiliki ruang yang cukup menuju resistance.
-
-7. Jarak harga ke resistance harus diperhatikan
-   menggunakan ATR.
-
-Jangan BUY jika harga terlalu dekat resistance.
-
-================================
-ATURAN SELL
-================================
-
-SELL hanya boleh dipertimbangkan jika:
-
-1. 1H menunjukkan BEARISH
-   EMA50 < EMA200
-
-2. 15M mendukung BEARISH
-   EMA50 < EMA200
-   atau terdapat konfirmasi bearish yang kuat.
-
-3. 5M menunjukkan momentum bearish.
-
-4. MACD mendukung arah SELL.
-
-5. RSI tidak terlalu oversold.
-
-6. Harga memiliki ruang yang cukup menuju support.
-
-7. Jarak harga ke support harus diperhatikan
-   menggunakan ATR.
-
-Jangan SELL jika harga terlalu dekat support.
-
-================================
-NO TRADE
-================================
-
-Pilih NO TRADE jika:
-
-- 1H dan 15M bertentangan
-- 15M dan 5M bertentangan secara signifikan
-- MACD bertentangan dengan trend
-- RSI terlalu ekstrem
-- Harga terlalu dekat resistance untuk BUY
-- Harga terlalu dekat support untuk SELL
-- Volatilitas terlalu tinggi
-- Risk/reward tidak menarik
-- Data tidak cukup
-- Sinyal belum terkonfirmasi
-
-================================
-PRIORITAS
-================================
-
-Prioritaskan:
-
-1. Trend 1H
-2. Setup 15M
-3. Momentum 5M
-4. MACD
-5. RSI
-6. Support / Resistance
-7. ATR dan jarak ke level penting
+Pilih NO TRADE jika timeframe bertentangan,
+momentum lemah, RSI ekstrem, atau risiko terlalu tinggi.
 
 Jangan memaksakan entry.
-
-Jika bukti BUY dan SELL sama kuat,
-pilih NO TRADE.
-
-Confidence harus mencerminkan
-kekuatan bukti yang tersedia.
-
-
-================================
-OUTPUT
-================================
 
 Jawab HANYA JSON:
 
@@ -635,28 +555,9 @@ Jawab HANYA JSON:
     "take_profit_1": 0,
     "take_profit_2": 0,
     "risk_reward": 0,
-    "reason": "alasan singkat berdasarkan 1H, 15M, 5M, RSI, MACD, ATR dan support/resistance"
+    "reason": "alasan singkat"
 }}
-
-ATURAN LEVEL:
-
-Untuk BUY:
-- Entry = harga saat ini atau area entry yang masuk akal.
-- Stop Loss harus berada di bawah support/struktur penting.
-- TP1 menuju resistance terdekat.
-- TP2 menuju resistance berikutnya jika tersedia.
-- Jangan membuat SL/TP yang tidak masuk akal terhadap ATR.
-
-Untuk SELL:
-- Entry = harga saat ini atau area entry yang masuk akal.
-- Stop Loss harus berada di atas resistance/struktur penting.
-- TP1 menuju support terdekat.
-- TP2 menuju support berikutnya jika tersedia.
-
-Risk/Reward dihitung dari Entry → SL dibanding Entry → TP1.
-
-Jika level SL/TP tidak dapat ditentukan dengan cukup baik,
-gunakan NO TRADE.
+"""
 
     payload = {
         "contents": [
@@ -670,13 +571,7 @@ gunakan NO TRADE.
         ]
     }
 
-    # =================================
-    # GEMINI RETRY
-    # =================================
-
-    max_retries = 3
-
-    for attempt in range(max_retries):
+    for attempt in range(3):
 
         try:
 
@@ -686,10 +581,6 @@ gunakan NO TRADE.
                 json=payload,
                 timeout=30
             )
-
-            # =========================
-            # BERHASIL
-            # =========================
 
             if response.status_code == 200:
 
@@ -714,18 +605,6 @@ gunakan NO TRADE.
                     "NO TRADE"
                 )
 
-                confidence = ai_result.get(
-                    "confidence",
-                    0
-                )
-
-                reason = ai_result.get(
-                    "reason",
-                    ""
-                )
-
-                # Validasi decision
-
                 if decision not in [
                     "BUY",
                     "SELL",
@@ -734,71 +613,52 @@ gunakan NO TRADE.
                     decision = "NO TRADE"
 
                 return {
-    "decision": decision,
-    "confidence": confidence,
-    "entry": ai_result.get("entry", 0),
-    "stop_loss": ai_result.get("stop_loss", 0),
-    "take_profit_1": ai_result.get("take_profit_1", 0),
-    "take_profit_2": ai_result.get("take_profit_2", 0),
-    "risk_reward": ai_result.get("risk_reward", 0),
-    "reason": reason
+                    "decision": decision,
+                    "confidence": ai_result.get(
+                        "confidence", 0
+                    ),
+                    "entry": ai_result.get(
+                        "entry", 0
+                    ),
+                    "stop_loss": ai_result.get(
+                        "stop_loss", 0
+                    ),
+                    "take_profit_1": ai_result.get(
+                        "take_profit_1", 0
+                    ),
+                    "take_profit_2": ai_result.get(
+                        "take_profit_2", 0
+                    ),
+                    "risk_reward": ai_result.get(
+                        "risk_reward", 0
+                    ),
+                    "reason": ai_result.get(
+                        "reason", ""
+                    )
                 }
-
-            # =========================
-            # GEMINI 503
-            # =========================
 
             if response.status_code == 503:
 
-                if attempt < max_retries - 1:
-
-                    wait_time = 2 ** attempt
-
-                    print(
-                        f"Gemini 503. "
-                        f"Retry {attempt + 1} "
-                        f"setelah {wait_time} detik..."
-                    )
-
-                    time.sleep(wait_time)
-
+                if attempt < 2:
+                    time.sleep(2 ** attempt)
                     continue
 
                 return {
                     "decision": "NO TRADE",
                     "confidence": 0,
-                    "reason": (
-                        "Gemini sedang mengalami "
-                        "high demand setelah 3 percobaan."
-                    )
+                    "reason": "Gemini sedang high demand."
                 }
-
-            # =========================
-            # ERROR LAIN
-            # =========================
 
             return {
                 "decision": "NO TRADE",
                 "confidence": 0,
-                "reason": (
-                    f"Gemini API error: "
-                    f"{response.text}"
-                )
+                "reason": f"Gemini API error: {response.text}"
             }
 
         except Exception as e:
 
-            if attempt < max_retries - 1:
-
-                wait_time = 2 ** attempt
-
-                print(
-                    f"Gemini connection error. "
-                    f"Retry setelah {wait_time} detik..."
-                )
-
-                time.sleep(wait_time)
-
+            if attempt < 2:
+                time.sleep(2 ** attempt)
                 continue
 
             return {
@@ -806,6 +666,7 @@ gunakan NO TRADE.
                 "confidence": 0,
                 "reason": f"Gemini AI error: {str(e)}"
     }
+
 
 
                 
@@ -1016,7 +877,7 @@ def webhook():
     if result["decision"] == "PAUSE":
 
         text = f"""
-🔴 NEWS PAUSE
+        🔴 NEWS PAUSE
 
 Pair: {pair}
 
@@ -1125,7 +986,7 @@ def test_webhook(pair):
     if result["decision"] == "PAUSE":
 
         text = f"""
-🔴 NEWS PAUSE
+        🔴 NEWS PAUSE
 
 Pair: {pair}
 
