@@ -620,6 +620,7 @@ pilih NO TRADE.
 Confidence harus mencerminkan
 kekuatan bukti yang tersedia.
 
+
 ================================
 OUTPUT
 ================================
@@ -629,15 +630,33 @@ Jawab HANYA JSON:
 {{
     "decision": "BUY/SELL/NO TRADE",
     "confidence": 0,
-    "reason": "alasan singkat dan spesifik berdasarkan 1H, 15M, 5M, RSI, MACD dan support/resistance"
+    "entry": 0,
+    "stop_loss": 0,
+    "take_profit_1": 0,
+    "take_profit_2": 0,
+    "risk_reward": 0,
+    "reason": "alasan singkat berdasarkan 1H, 15M, 5M, RSI, MACD, ATR dan support/resistance"
 }}
 
-Decision hanya boleh:
+ATURAN LEVEL:
 
-BUY
-SELL
-NO TRADE
-"""
+Untuk BUY:
+- Entry = harga saat ini atau area entry yang masuk akal.
+- Stop Loss harus berada di bawah support/struktur penting.
+- TP1 menuju resistance terdekat.
+- TP2 menuju resistance berikutnya jika tersedia.
+- Jangan membuat SL/TP yang tidak masuk akal terhadap ATR.
+
+Untuk SELL:
+- Entry = harga saat ini atau area entry yang masuk akal.
+- Stop Loss harus berada di atas resistance/struktur penting.
+- TP1 menuju support terdekat.
+- TP2 menuju support berikutnya jika tersedia.
+
+Risk/Reward dihitung dari Entry → SL dibanding Entry → TP1.
+
+Jika level SL/TP tidak dapat ditentukan dengan cukup baik,
+gunakan NO TRADE.
 
     payload = {
         "contents": [
@@ -715,9 +734,14 @@ NO TRADE
                     decision = "NO TRADE"
 
                 return {
-                    "decision": decision,
-                    "confidence": confidence,
-                    "reason": reason
+    "decision": decision,
+    "confidence": confidence,
+    "entry": ai_result.get("entry", 0),
+    "stop_loss": ai_result.get("stop_loss", 0),
+    "take_profit_1": ai_result.get("take_profit_1", 0),
+    "take_profit_2": ai_result.get("take_profit_2", 0),
+    "risk_reward": ai_result.get("risk_reward", 0),
+    "reason": reason
                 }
 
             # =========================
