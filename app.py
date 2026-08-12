@@ -672,43 +672,117 @@ take_profit_2 dan risk_reward boleh bernilai 0.
                     confidence = int(confidence)
 
                 # =========================
-                # RETURN
-                # =========================
+# ENTRY / SL / TP / R:R
+# =========================
 
-                return {
-                    "decision": decision,
+entry = ai_result.get("entry", 0)
+stop_loss = ai_result.get("stop_loss", 0)
+take_profit_1 = ai_result.get("take_profit_1", 0)
+take_profit_2 = ai_result.get("take_profit_2", 0)
+risk_reward = ai_result.get("risk_reward", 0)
 
-                    "confidence": confidence,
+# Pastikan semua angka valid
+try:
+    entry = float(entry)
+except:
+    entry = 0
 
-                    "entry": ai_result.get(
-                        "entry",
-                        0
-                    ),
+try:
+    stop_loss = float(stop_loss)
+except:
+    stop_loss = 0
 
-                    "stop_loss": ai_result.get(
-                        "stop_loss",
-                        0
-                    ),
+try:
+    take_profit_1 = float(take_profit_1)
+except:
+    take_profit_1 = 0
 
-                    "take_profit_1": ai_result.get(
-                        "take_profit_1",
-                        0
-                    ),
+try:
+    take_profit_2 = float(take_profit_2)
+except:
+    take_profit_2 = 0
 
-                    "take_profit_2": ai_result.get(
-                        "take_profit_2",
-                        0
-                    ),
+try:
+    risk_reward = float(risk_reward)
+except:
+    risk_reward = 0
 
-                    "risk_reward": ai_result.get(
-                        "risk_reward",
-                        0
-                    ),
 
-                    "reason": ai_result.get(
-                        "reason",
-                        "Tidak ada alasan dari Gemini."
-                    )
+# =========================
+# VALIDASI BUY / SELL
+# =========================
+
+if decision in ["BUY", "SELL"]:
+
+    valid_risk = (
+        entry > 0
+        and stop_loss > 0
+        and take_profit_1 > 0
+        and take_profit_2 > 0
+        and risk_reward > 0
+    )
+
+    if not valid_risk:
+
+        decision = "NO TRADE"
+
+        confidence = 0
+
+        entry = 0
+        stop_loss = 0
+        take_profit_1 = 0
+        take_profit_2 = 0
+        risk_reward = 0
+
+        reason = (
+            "Sinyal BUY/SELL tidak memiliki "
+            "Entry, Stop Loss, Take Profit, "
+            "atau Risk/Reward yang valid."
+        )
+
+    else:
+
+        reason = ai_result.get(
+            "reason",
+            "Tidak ada alasan dari Gemini."
+        )
+
+else:
+
+    # NO TRADE tidak membutuhkan entry
+    entry = 0
+    stop_loss = 0
+    take_profit_1 = 0
+    take_profit_2 = 0
+    risk_reward = 0
+
+    reason = ai_result.get(
+        "reason",
+        "Tidak ada alasan dari Gemini."
+    )
+
+
+# =========================
+# RETURN
+# =========================
+
+return {
+
+    "decision": decision,
+
+    "confidence": confidence,
+
+    "entry": entry,
+
+    "stop_loss": stop_loss,
+
+    "take_profit_1": take_profit_1,
+
+    "take_profit_2": take_profit_2,
+
+    "risk_reward": risk_reward,
+
+    "reason": reason
                 }
 
             # =========================
