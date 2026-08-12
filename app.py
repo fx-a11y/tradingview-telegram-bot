@@ -513,77 +513,130 @@ def analyze_with_gemini(pair, signal_data, price):
     prompt = f"""
 Kamu adalah AI trading analyst profesional.
 
-Analisa pair {pair} berdasarkan data market dan indikator.
-
-PAIR:
-{pair}
+Analisa {pair} menggunakan MULTI TIMEFRAME 5M, 15M, dan 1H.
 
 HARGA:
 {price}
 
-DATA MARKET DAN INDIKATOR:
+DATA MARKET:
 {signal_data}
 
-========================
-MULTI TIMEFRAME
-========================
+================================
+HIRARKI TIMEFRAME
+================================
 
-5M:
-Momentum dan kondisi entry.
+1H = TREND UTAMA
+15M = SETUP
+5M = ENTRY / MOMENTUM
 
-15M:
-Setup utama.
+================================
+ATURAN BUY
+================================
 
-1H:
-Trend utama.
+BUY hanya boleh dipertimbangkan jika:
 
-========================
-INDIKATOR
-========================
+1. 1H menunjukkan BULLISH
+   EMA50 > EMA200
 
-Gunakan:
-- EMA 50
-- EMA 200
-- RSI 14
-- MACD
-- MACD Signal
-- MACD Histogram
-- ATR 14
-- Support
-- Resistance
-- Trend
+2. 15M mendukung BULLISH
+   EMA50 > EMA200
+   atau terdapat konfirmasi bullish yang kuat.
 
-========================
-ATURAN
-========================
+3. 5M menunjukkan momentum bullish.
 
-BUY jika bukti bullish cukup kuat.
+4. MACD mendukung arah BUY.
 
-SELL jika bukti bearish cukup kuat.
+5. RSI tidak terlalu overbought.
 
-NO TRADE jika:
-- timeframe bertentangan
-- momentum tidak jelas
-- harga terlalu dekat support
-- harga terlalu dekat resistance
+6. Harga memiliki ruang yang cukup menuju resistance.
+
+7. Jarak harga ke resistance harus diperhatikan
+   menggunakan ATR.
+
+Jangan BUY jika harga terlalu dekat resistance.
+
+================================
+ATURAN SELL
+================================
+
+SELL hanya boleh dipertimbangkan jika:
+
+1. 1H menunjukkan BEARISH
+   EMA50 < EMA200
+
+2. 15M mendukung BEARISH
+   EMA50 < EMA200
+   atau terdapat konfirmasi bearish yang kuat.
+
+3. 5M menunjukkan momentum bearish.
+
+4. MACD mendukung arah SELL.
+
+5. RSI tidak terlalu oversold.
+
+6. Harga memiliki ruang yang cukup menuju support.
+
+7. Jarak harga ke support harus diperhatikan
+   menggunakan ATR.
+
+Jangan SELL jika harga terlalu dekat support.
+
+================================
+NO TRADE
+================================
+
+Pilih NO TRADE jika:
+
+- 1H dan 15M bertentangan
+- 15M dan 5M bertentangan secara signifikan
+- MACD bertentangan dengan trend
 - RSI terlalu ekstrem
-- MACD tidak mendukung
-- risiko false signal tinggi
-- data tidak cukup
+- Harga terlalu dekat resistance untuk BUY
+- Harga terlalu dekat support untuk SELL
+- Volatilitas terlalu tinggi
+- Risk/reward tidak menarik
+- Data tidak cukup
+- Sinyal belum terkonfirmasi
 
-1H adalah trend utama.
-15M adalah setup.
-5M adalah momentum entry.
+================================
+PRIORITAS
+================================
+
+Prioritaskan:
+
+1. Trend 1H
+2. Setup 15M
+3. Momentum 5M
+4. MACD
+5. RSI
+6. Support / Resistance
+7. ATR dan jarak ke level penting
 
 Jangan memaksakan entry.
+
+Jika bukti BUY dan SELL sama kuat,
+pilih NO TRADE.
+
+Confidence harus mencerminkan
+kekuatan bukti yang tersedia.
+
+================================
+OUTPUT
+================================
 
 Jawab HANYA JSON:
 
 {{
     "decision": "BUY/SELL/NO TRADE",
     "confidence": 0,
-    "reason": "alasan singkat berdasarkan 5M, 15M dan 1H"
+    "reason": "alasan singkat dan spesifik berdasarkan 1H, 15M, 5M, RSI, MACD dan support/resistance"
 }}
+
+Decision hanya boleh:
+
+BUY
+SELL
+NO TRADE
 """
 
     payload = {
