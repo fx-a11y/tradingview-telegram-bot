@@ -508,12 +508,12 @@ def analyze_with_gemini(pair, signal_data, price):
     }
 
     prompt = f"""
-Kamu adalah AI trading analyst profesional.
+Kamu adalah AI trading analyst profesional untuk Forex.
 
 PAIR:
 {pair}
 
-HARGA:
+HARGA SAAT INI:
 {price}
 
 DATA MARKET:
@@ -524,65 +524,120 @@ HIRARKI TIMEFRAME:
 15M = setup
 5M = entry dan momentum
 
-ATURAN BUY:
-- 1H bullish
+================================
+ATURAN ANALISA
+================================
+
+BUY hanya jika:
+- Trend 1H bullish
 - 15M mendukung bullish
 - 5M mendukung bullish
 - MACD mendukung BUY
 - RSI tidak terlalu overbought
 - Harga tidak terlalu dekat resistance
+- Momentum mendukung entry
 
-ATURAN SELL:
-- 1H bearish
+SELL hanya jika:
+- Trend 1H bearish
 - 15M mendukung bearish
 - 5M mendukung bearish
 - MACD mendukung SELL
 - RSI tidak terlalu oversold
 - Harga tidak terlalu dekat support
+- Momentum mendukung entry
 
-ATURAN NO TRADE:
-- Timeframe saling bertentangan
+NO TRADE jika:
+- Timeframe bertentangan
 - Momentum lemah
 - RSI terlalu ekstrem
-- Risiko terlalu tinggi
 - Belum ada konfirmasi entry
-- Jangan memaksakan BUY atau SELL
+- Risiko terlalu tinggi
+- Kondisi market tidak jelas
 
-CONFIDENCE:
-- Berikan angka 0 sampai 100.
-- Confidence harus selalu berupa angka.
-- Jangan mengembalikan confidence kosong.
-- Confidence menunjukkan seberapa kuat keputusan yang kamu ambil.
-- Jika NO TRADE karena setup belum terkonfirmasi, tetap berikan confidence berdasarkan keyakinan bahwa keputusan NO TRADE benar.
+Jangan memaksakan BUY atau SELL.
 
-PENTING:
-- Jangan memaksakan entry.
-- Jangan membuat data market.
-- Gunakan hanya data yang diberikan.
-- Jawab HANYA JSON valid.
-- Jangan gunakan markdown.
-- Jangan gunakan ```json.
+================================
+RISK MANAGEMENT
+================================
 
-FORMAT JSON WAJIB:
+Jika BUY:
+
+ENTRY harus berada dekat harga market yang masuk akal.
+
+STOP LOSS harus berada DI BAWAH ENTRY.
+
+TAKE PROFIT 1 harus berada DI ATAS ENTRY.
+
+TAKE PROFIT 2 harus berada DI ATAS TAKE PROFIT 1.
+
+Jika SELL:
+
+ENTRY harus berada dekat harga market yang masuk akal.
+
+STOP LOSS harus berada DI ATAS ENTRY.
+
+TAKE PROFIT 1 harus berada DI BAWAH ENTRY.
+
+TAKE PROFIT 2 harus berada DI BAWAH TAKE PROFIT 1.
+
+Risk/Reward harus dihitung berdasarkan ENTRY, STOP LOSS dan TAKE PROFIT.
+
+Gunakan harga dan data market yang diberikan.
+
+Jangan membuat harga market secara sembarangan.
+
+Jika kondisi tidak memenuhi syarat untuk entry:
+decision = NO TRADE
+dan semua nilai Entry, SL, TP1, TP2 dan R:R = 0.
+
+================================
+CONFIDENCE
+================================
+
+Berikan confidence 0 sampai 100.
+
+Confidence harus selalu berupa angka.
+
+Confidence menunjukkan tingkat keyakinan terhadap keputusan.
+
+Jangan selalu memberikan confidence 0.
+
+================================
+FORMAT OUTPUT
+================================
+
+Jawab HANYA JSON VALID.
+
+Jangan gunakan markdown.
+
+Jangan gunakan ```json.
+
+Format:
 
 {{
     "decision": "BUY",
-    "confidence": 75,
-    "entry": 4421.0,
-    "stop_loss": 4410.0,
-    "take_profit_1": 4435.0,
-    "take_profit_2": 4450.0,
-    "risk_reward": 1.5,
-    "reason": "alasan singkat"
+    "confidence": 80,
+    "entry": 4426.30,
+    "stop_loss": 4418.00,
+    "take_profit_1": 4435.00,
+    "take_profit_2": 4445.00,
+    "risk_reward": 2.0,
+    "reason": "Alasan singkat berdasarkan data market."
 }}
 
 Decision hanya boleh:
+
 BUY
 SELL
 NO TRADE
 
-Jika decision = NO TRADE, entry, stop_loss, take_profit_1,
-take_profit_2 dan risk_reward boleh bernilai 0.
+Jika NO TRADE:
+
+"entry": 0,
+"stop_loss": 0,
+"take_profit_1": 0,
+"take_profit_2": 0,
+"risk_reward": 0
 """
 
     payload = {
@@ -608,6 +663,10 @@ take_profit_2 dan risk_reward boleh bernilai 0.
                 timeout=30
             )
 
+            # =========================
+            # GEMINI BERHASIL
+            # =========================
+
             if response.status_code == 200:
 
                 result = response.json()
@@ -617,15 +676,16 @@ take_profit_2 dan risk_reward boleh bernilai 0.
                     ["content"]["parts"][0]["text"]
                 )
 
-                # Bersihkan markdown jika Gemini tetap mengirimnya
                 ai_text = ai_text.strip()
 
                 if ai_text.startswith("```"):
-                    ai_text = ai_text.replace(
-                        "```json", ""
-                    ).replace(
-                        "```", ""
-                    ).strip()
+
+                    ai_text = (
+                        ai_text
+                        .replace("```json", "")
+                        .replace("```", "")
+                        .strip()
+                    )
 
                 ai_result = json.loads(ai_text)
 
@@ -645,6 +705,7 @@ take_profit_2 dan risk_reward boleh bernilai 0.
                     "SELL",
                     "NO TRADE"
                 ]:
+
                     decision = "NO TRADE"
 
                 # =========================
@@ -661,128 +722,188 @@ take_profit_2 dan risk_reward boleh bernilai 0.
                 except:
                     confidence = 0
 
-                # Batasi confidence 0-100
                 confidence = max(
                     0,
                     min(100, confidence)
                 )
 
-                # Jika berupa 75.0 tampil sebagai 75
                 if confidence.is_integer():
                     confidence = int(confidence)
 
                 # =========================
-# ENTRY / SL / TP / R:R
-# =========================
+                # ENTRY
+                # =========================
 
-entry = ai_result.get("entry", 0)
-stop_loss = ai_result.get("stop_loss", 0)
-take_profit_1 = ai_result.get("take_profit_1", 0)
-take_profit_2 = ai_result.get("take_profit_2", 0)
-risk_reward = ai_result.get("risk_reward", 0)
+                entry = ai_result.get(
+                    "entry",
+                    0
+                )
 
-# Pastikan semua angka valid
-try:
-    entry = float(entry)
-except:
-    entry = 0
+                stop_loss = ai_result.get(
+                    "stop_loss",
+                    0
+                )
 
-try:
-    stop_loss = float(stop_loss)
-except:
-    stop_loss = 0
+                take_profit_1 = ai_result.get(
+                    "take_profit_1",
+                    0
+                )
 
-try:
-    take_profit_1 = float(take_profit_1)
-except:
-    take_profit_1 = 0
+                take_profit_2 = ai_result.get(
+                    "take_profit_2",
+                    0
+                )
 
-try:
-    take_profit_2 = float(take_profit_2)
-except:
-    take_profit_2 = 0
+                risk_reward = ai_result.get(
+                    "risk_reward",
+                    0
+                )
 
-try:
-    risk_reward = float(risk_reward)
-except:
-    risk_reward = 0
+                # =========================
+                # CONVERT NUMBER
+                # =========================
 
+                try:
+                    entry = float(entry)
+                except:
+                    entry = 0
 
-# =========================
-# VALIDASI BUY / SELL
-# =========================
+                try:
+                    stop_loss = float(stop_loss)
+                except:
+                    stop_loss = 0
 
-if decision in ["BUY", "SELL"]:
+                try:
+                    take_profit_1 = float(
+                        take_profit_1
+                    )
+                except:
+                    take_profit_1 = 0
 
-    valid_risk = (
-        entry > 0
-        and stop_loss > 0
-        and take_profit_1 > 0
-        and take_profit_2 > 0
-        and risk_reward > 0
-    )
+                try:
+                    take_profit_2 = float(
+                        take_profit_2
+                    )
+                except:
+                    take_profit_2 = 0
 
-    if not valid_risk:
+                try:
+                    risk_reward = float(
+                        risk_reward
+                    )
+                except:
+                    risk_reward = 0
 
-        decision = "NO TRADE"
+                # =========================
+                # VALIDASI NO TRADE
+                # =========================
 
-        confidence = 0
+                if decision == "NO TRADE":
 
-        entry = 0
-        stop_loss = 0
-        take_profit_1 = 0
-        take_profit_2 = 0
-        risk_reward = 0
+                    entry = 0
+                    stop_loss = 0
+                    take_profit_1 = 0
+                    take_profit_2 = 0
+                    risk_reward = 0
 
-        reason = (
-            "Sinyal BUY/SELL tidak memiliki "
-            "Entry, Stop Loss, Take Profit, "
-            "atau Risk/Reward yang valid."
-        )
+                # =========================
+                # VALIDASI BUY
+                # =========================
 
-    else:
+                elif decision == "BUY":
 
-        reason = ai_result.get(
-            "reason",
-            "Tidak ada alasan dari Gemini."
-        )
+                    valid_buy = (
+                        entry > 0
+                        and stop_loss > 0
+                        and take_profit_1 > entry
+                        and take_profit_2 > take_profit_1
+                        and stop_loss < entry
+                        and risk_reward > 0
+                    )
 
-else:
+                    if not valid_buy:
 
-    # NO TRADE tidak membutuhkan entry
-    entry = 0
-    stop_loss = 0
-    take_profit_1 = 0
-    take_profit_2 = 0
-    risk_reward = 0
+                        decision = "NO TRADE"
+                        confidence = 0
 
-    reason = ai_result.get(
-        "reason",
-        "Tidak ada alasan dari Gemini."
-    )
+                        entry = 0
+                        stop_loss = 0
+                        take_profit_1 = 0
+                        take_profit_2 = 0
+                        risk_reward = 0
 
+                        reason = (
+                            "Sinyal BUY tidak memiliki "
+                            "Entry, Stop Loss, Take Profit "
+                            "atau Risk/Reward yang valid."
+                        )
 
-# =========================
-# RETURN
-# =========================
+                    else:
 
-return {
+                        reason = ai_result.get(
+                            "reason",
+                            "Tidak ada alasan dari Gemini."
+                        )
 
-    "decision": decision,
+                # =========================
+                # VALIDASI SELL
+                # =========================
 
-    "confidence": confidence,
+                else:
 
-    "entry": entry,
+                    valid_sell = (
+                        entry > 0
+                        and stop_loss > entry
+                        and take_profit_1 < entry
+                        and take_profit_2 < take_profit_1
+                        and risk_reward > 0
+                    )
 
-    "stop_loss": stop_loss,
+                    if not valid_sell:
 
-    "take_profit_1": take_profit_1,
+                        decision = "NO TRADE"
+                        confidence = 0
 
-    "take_profit_2": take_profit_2,
+                        entry = 0
+                        stop_loss = 0
+                        take_profit_1 = 0
+                        take_profit_2 = 0
+                        risk_reward = 0
 
-    "risk_reward": risk_reward,
+                        reason = (
+                            "Sinyal SELL tidak memiliki "
+                            "Entry, Stop Loss, Take Profit "
+                            "atau Risk/Reward yang valid."
+                        )
 
-    "reason": reason
+                    else:
+
+                        reason = ai_result.get(
+                            "reason",
+                            "Tidak ada alasan dari Gemini."
+                        )
+
+                # =========================
+                # RETURN GEMINI
+                # =========================
+
+                return {
+
+                    "decision": decision,
+
+                    "confidence": confidence,
+
+                    "entry": entry,
+
+                    "stop_loss": stop_loss,
+
+                    "take_profit_1": take_profit_1,
+
+                    "take_profit_2": take_profit_2,
+
+                    "risk_reward": risk_reward,
+
+                    "reason": reason
                 }
 
             # =========================
@@ -792,18 +913,32 @@ return {
             if response.status_code == 503:
 
                 if attempt < 2:
-                    time.sleep(2 ** attempt)
+
+                    time.sleep(
+                        2 ** attempt
+                    )
+
                     continue
 
                 return {
+
                     "decision": "NO TRADE",
+
                     "confidence": 0,
+
                     "entry": 0,
+
                     "stop_loss": 0,
+
                     "take_profit_1": 0,
+
                     "take_profit_2": 0,
+
                     "risk_reward": 0,
-                    "reason": "Gemini sedang high demand."
+
+                    "reason": (
+                        "Gemini sedang high demand."
+                    )
                 }
 
             # =========================
@@ -811,34 +946,64 @@ return {
             # =========================
 
             return {
+
                 "decision": "NO TRADE",
+
                 "confidence": 0,
+
                 "entry": 0,
+
                 "stop_loss": 0,
+
                 "take_profit_1": 0,
+
                 "take_profit_2": 0,
+
                 "risk_reward": 0,
-                "reason": f"Gemini API error: {response.text}"
+
+                "reason": (
+                    f"Gemini API error: "
+                    f"{response.text}"
+                )
             }
+
+        # =========================
+        # EXCEPTION
+        # =========================
 
         except Exception as e:
 
             if attempt < 2:
-                time.sleep(2 ** attempt)
+
+                time.sleep(
+                    2 ** attempt
+                )
+
                 continue
 
             return {
+
                 "decision": "NO TRADE",
+
                 "confidence": 0,
+
                 "entry": 0,
+
                 "stop_loss": 0,
+
                 "take_profit_1": 0,
+
                 "take_profit_2": 0,
+
                 "risk_reward": 0,
-                "reason": f"Gemini AI error: {str(e)}"
-                        }
- 
- 
+
+                "reason": (
+                    f"Gemini AI error: "
+                    f"{str(e)}"
+                )
+    }
+
+
               
 def process_signal(pair, signal_data):
 
