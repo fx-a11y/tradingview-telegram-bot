@@ -342,31 +342,118 @@ def has_market_momentum(indicators):
 
         if macd_15m < 0:
             sell_score += 1
+def has_market_momentum(indicators):
+    """
+    Filter sebelum Gemini.
 
-        if 30 <= rsi_5m <= 55:
-            sell_score += 1
+    1H  = trend utama
+    15M = konfirmasi arah
+    5M  = momentum / entry
 
-        # Jangan mengejar harga yang terlalu dekat support
-        if price > support:
-            distance = price - support
+    Gemini hanya dipanggil jika 1H dan 15M
+    searah dan 5M mendukung arah tersebut.
+    """
 
-            if price > 0:
-                distance_percent = (
-                    distance / price
-                ) * 100
+    try:
 
-                if distance_percent > 0.05:
-                    sell_score += 1
+        m5 = indicators.get("5min", {})
+        m15 = indicators.get("15min", {})
+        h1 = indicators.get("1h", {})
 
         # =========================
-        # MOMENTUM VALID
+        # CEK DATA
         # =========================
 
-        if buy_score >= 4:
+        if (
+            "error" in m5
+            or "error" in m15
+            or "error" in h1
+        ):
+            return False
+
+        trend_5m = m5.get("trend", "SIDEWAYS")
+        trend_15m = m15.get("trend", "SIDEWAYS")
+        trend_1h = h1.get("trend", "SIDEWAYS")
+
+        rsi_5m = float(m5.get("rsi14", 50))
+
+        macd_5m = float(
+            m5.get("macd_histogram", 0)
+        )
+
+        macd_15m = float(
+            m15.get("macd_histogram", 0)
+        )
+
+        macd_1h = float(
+            h1.get("macd_histogram", 0)
+        )
+
+        # =========================
+        # BUY SETUP
+        # =========================
+
+        buy_conditions = [
+
+            # Trend utama
+            trend_1h == "BULLISH",
+
+            # Setup 15M harus searah
+            trend_15m == "BULLISH",
+
+            # Momentum 5M harus bullish
+            trend_5m == "BULLISH",
+
+            # MACD 5M positif
+            macd_5m > 0,
+
+            # MACD 15M positif
+            macd_15m > 0,
+
+            # MACD 1H positif
+            macd_1h > 0,
+
+            # RSI 5M tidak overbought
+            50 <= rsi_5m <= 70
+        ]
+
+        if all(buy_conditions):
             return True
 
-        if sell_score >= 4:
+        # =========================
+        # SELL SETUP
+        # =========================
+
+        sell_conditions = [
+
+            # Trend utama
+            trend_1h == "BEARISH",
+
+            # Setup 15M harus searah
+            trend_15m == "BEARISH",
+
+            # Momentum 5M harus bearish
+            trend_5m == "BEARISH",
+
+            # MACD 5M negatif
+            macd_5m < 0,
+
+            # MACD 15M negatif
+            macd_15m < 0,
+
+            # MACD 1H negatif
+            macd_1h < 0,
+
+            # RSI 5M tidak oversold
+            30 <= rsi_5m <= 50
+        ]
+
+        if all(sell_conditions):
             return True
+
+        # =========================
+        # TIDAK ADA SETUP
+        # =========================
 
         return False
 
