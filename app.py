@@ -248,6 +248,131 @@ def calculate_multi_timeframe_indicators(market_data):
 
     return result
 
+def has_market_momentum(indicators):
+    """
+    Filter awal sebelum Gemini.
+    Hanya meneruskan market yang memiliki
+    potensi BUY atau SELL.
+    """
+
+    try:
+        m5 = indicators.get("5min", {})
+        m15 = indicators.get("15min", {})
+        h1 = indicators.get("1h", {})
+
+        # Pastikan semua timeframe tersedia
+        if (
+            "error" in m5
+            or "error" in m15
+            or "error" in h1
+        ):
+            return False
+
+        # =========================
+        # DATA
+        # =========================
+
+        trend_5m = m5.get("trend", "SIDEWAYS")
+        trend_15m = m15.get("trend", "SIDEWAYS")
+        trend_1h = h1.get("trend", "SIDEWAYS")
+
+        rsi_5m = float(m5.get("rsi14", 50))
+        rsi_15m = float(m15.get("rsi14", 50))
+
+        macd_5m = float(m5.get("macd_histogram", 0))
+        macd_15m = float(m15.get("macd_histogram", 0))
+
+        price = float(m5.get("price", 0))
+        support = float(m5.get("support", 0))
+        resistance = float(m5.get("resistance", 0))
+
+        # =========================
+        # BUY MOMENTUM
+        # =========================
+
+        buy_score = 0
+
+        if trend_1h == "BULLISH":
+            buy_score += 1
+
+        if trend_15m == "BULLISH":
+            buy_score += 1
+
+        if trend_5m == "BULLISH":
+            buy_score += 1
+
+        if macd_5m > 0:
+            buy_score += 1
+
+        if macd_15m > 0:
+            buy_score += 1
+
+        if 45 <= rsi_5m <= 70:
+            buy_score += 1
+
+        # Jangan mengejar harga yang terlalu dekat resistance
+        if resistance > price:
+            distance = resistance - price
+
+            if price > 0:
+                distance_percent = (
+                    distance / price
+                ) * 100
+
+                if distance_percent > 0.05:
+                    buy_score += 1
+
+        # =========================
+        # SELL MOMENTUM
+        # =========================
+
+        sell_score = 0
+
+        if trend_1h == "BEARISH":
+            sell_score += 1
+
+        if trend_15m == "BEARISH":
+            sell_score += 1
+
+        if trend_5m == "BEARISH":
+            sell_score += 1
+
+        if macd_5m < 0:
+            sell_score += 1
+
+        if macd_15m < 0:
+            sell_score += 1
+
+        if 30 <= rsi_5m <= 55:
+            sell_score += 1
+
+        # Jangan mengejar harga yang terlalu dekat support
+        if price > support:
+            distance = price - support
+
+            if price > 0:
+                distance_percent = (
+                    distance / price
+                ) * 100
+
+                if distance_percent > 0.05:
+                    sell_score += 1
+
+        # =========================
+        # MOMENTUM VALID
+        # =========================
+
+        if buy_score >= 4:
+            return True
+
+        if sell_score >= 4:
+            return True
+
+        return False
+
+    except Exception:
+        return False
+
 MARKETAUX_API_KEY = os.getenv("MARKETAUX_API_KEY")
 DATASECTORS_API_KEY = os.getenv("DATASECTORS_API_KEY")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
@@ -1080,6 +1205,26 @@ def process_signal(pair, signal_data):
             "reason": "Tidak ada data indikator yang berhasil",
             "pair": pair,
             "price": price
+        }
+
+    # =========================
+    # 6B. FILTER MOMENTUM
+    # =========================
+
+    if not has_market_momentum(indicators):
+
+        return {
+            "decision": "NO TRADE",
+            "confidence": 0,
+            "entry": 0,
+            "stop_loss": 0,
+            "take_profit_1": 0,
+            "take_profit_2": 0,
+            "risk_reward": 0,
+            "reason": "Tidak ada momentum/setup yang cukup kuat.",
+            "pair": pair,
+            "price": price,
+            "indicators": indicators
         }
 
     # =========================
