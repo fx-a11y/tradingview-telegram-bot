@@ -250,16 +250,6 @@ def calculate_multi_timeframe_indicators(market_data):
 
 
 def has_market_momentum(indicators):
-    """
-    Filter sebelum Gemini.
-
-    1H  = trend utama
-    15M = konfirmasi arah
-    5M  = momentum / entry
-
-    Gemini hanya dipanggil jika 1H dan 15M
-    searah dan 5M mendukung arah tersebut.
-    """
 
     try:
 
@@ -283,6 +273,7 @@ def has_market_momentum(indicators):
         trend_1h = h1.get("trend", "SIDEWAYS")
 
         rsi_5m = float(m5.get("rsi14", 50))
+        rsi_15m = float(m15.get("rsi14", 50))
 
         macd_5m = float(
             m5.get("macd_histogram", 0)
@@ -297,75 +288,87 @@ def has_market_momentum(indicators):
         )
 
         # =========================
-        # BUY SETUP
+        # BUY SCORE
         # =========================
 
-        buy_conditions = [
+        buy_score = 0
 
-            # Trend utama
-            trend_1h == "BULLISH",
+        if trend_1h == "BULLISH":
+            buy_score += 2
 
-            # Setup 15M harus searah
-            trend_15m == "BULLISH",
+        if trend_15m == "BULLISH":
+            buy_score += 2
 
-            # Momentum 5M harus bullish
-            trend_5m == "BULLISH",
+        if trend_5m == "BULLISH":
+            buy_score += 1
 
-            # MACD 5M positif
-            macd_5m > 0,
+        if macd_1h > 0:
+            buy_score += 1
 
-            # MACD 15M positif
-            macd_15m > 0,
+        if macd_15m > 0:
+            buy_score += 1
 
-            # MACD 1H positif
-            macd_1h > 0,
+        if macd_5m > 0:
+            buy_score += 1
 
-            # RSI 5M tidak overbought
-            50 <= rsi_5m <= 70
-        ]
+        if 45 <= rsi_5m <= 70:
+            buy_score += 1
 
-        if all(buy_conditions):
+        # =========================
+        # SELL SCORE
+        # =========================
+
+        sell_score = 0
+
+        if trend_1h == "BEARISH":
+            sell_score += 2
+
+        if trend_15m == "BEARISH":
+            sell_score += 2
+
+        if trend_5m == "BEARISH":
+            sell_score += 1
+
+        if macd_1h < 0:
+            sell_score += 1
+
+        if macd_15m < 0:
+            sell_score += 1
+
+        if macd_5m < 0:
+            sell_score += 1
+
+        if 30 <= rsi_5m <= 55:
+            sell_score += 1
+
+        # =========================
+        # FILTER
+        # =========================
+
+        # Minimal 1H + 15M harus searah
+        bullish_setup = (
+            trend_1h == "BULLISH"
+            and trend_15m == "BULLISH"
+        )
+
+        bearish_setup = (
+            trend_1h == "BEARISH"
+            and trend_15m == "BEARISH"
+        )
+
+        # Gemini hanya dipanggil jika
+        # score cukup kuat
+        if bullish_setup and buy_score >= 6:
             return True
 
-        # =========================
-        # SELL SETUP
-        # =========================
-
-        sell_conditions = [
-
-            # Trend utama
-            trend_1h == "BEARISH",
-
-            # Setup 15M harus searah
-            trend_15m == "BEARISH",
-
-            # Momentum 5M harus bearish
-            trend_5m == "BEARISH",
-
-            # MACD 5M negatif
-            macd_5m < 0,
-
-            # MACD 15M negatif
-            macd_15m < 0,
-
-            # MACD 1H negatif
-            macd_1h < 0,
-
-            # RSI 5M tidak oversold
-            30 <= rsi_5m <= 50
-        ]
-
-        if all(sell_conditions):
+        if bearish_setup and sell_score >= 6:
             return True
-
-        # =========================
-        # TIDAK ADA SETUP
-        # =========================
 
         return False
 
     except Exception:
         return False
+
 
 MARKETAUX_API_KEY = os.getenv("MARKETAUX_API_KEY")
 DATASECTORS_API_KEY = os.getenv("DATASECTORS_API_KEY")
