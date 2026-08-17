@@ -358,10 +358,10 @@ def has_market_momentum(indicators):
 
         # Gemini hanya dipanggil jika
         # score cukup kuat
-        if bullish_setup and buy_score >= 6:
+        if bullish_setup and buy_score >= 5:
             return True
 
-        if bearish_setup and sell_score >= 6:
+        if bearish_setup and sell_score >= 5:
             return True
 
         return False
