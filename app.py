@@ -356,23 +356,28 @@ def has_market_momentum(indicators):
             and trend_15m == "BEARISH"
         )
         print(
-            f"FILTER SCORE | "
-            f"BUY={buy_score} | "
-            f"SELL={sell_score} | "
-            f"1H={trend_1h} | "
-            f"15M={trend_15m} | "
-            f"5M={trend_5m}"
-        )
-        
-        # Gemini hanya dipanggil jika
-        # score cukup kuat
-        if bullish_setup and buy_score >= 5:
-            return True
+    f"FILTER SCORE | "
+    f"BUY={buy_score} | "
+    f"SELL={sell_score} | "
+    f"1H={trend_1h} | "
+    f"15M={trend_15m} | "
+    f"5M={trend_5m}"
+)
 
-        if bearish_setup and sell_score >= 5:
-            return True
+# =========================
+# FINAL GEMINI FILTER
+# =========================
 
-        return False
+if buy_score >= 6:
+    print("GEMINI FILTER: BUY SETUP PASSED")
+    return True
+
+if sell_score >= 6:
+    print("GEMINI FILTER: SELL SETUP PASSED")
+    return True
+
+print("GEMINI FILTER: NO SETUP")
+return False
 
     except Exception:
         return False
