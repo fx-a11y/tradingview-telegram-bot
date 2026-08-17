@@ -358,6 +358,15 @@ def has_market_momentum(indicators):
 
         # Gemini hanya dipanggil jika
         # score cukup kuat
+        print(
+    f"FILTER SCORE | "
+    f"BUY={buy_score} | "
+    f"SELL={sell_score} | "
+    f"1H={trend_1h} | "
+    f"15M={trend_15m} | "
+    f"5M={trend_5m}"
+    )
+      
         if bullish_setup and buy_score >= 5:
             return True
 
