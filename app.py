@@ -357,22 +357,27 @@ def has_market_momentum(indicators):
         # FILTER
         # =========================
 
-        if buy_score >= 6:
-            return True
+        # SETUP BUY
+        if (
+            trend_1h == "BULLISH"
+            and trend_15m == "BULLISH"
+            and buy_score >= 5
+        ):
+           return True
 
-        if sell_score >= 6:
-            return True
+        # SETUP SELL
+        if (
+            trend_1h == "BEARISH"
+            and trend_15m == "BEARISH"
+            and sell_score >= 5
+        ):
+           return True
 
         return False
 
-    except Exception as e:
-
-        print(
-            f"MOMENTUM FILTER ERROR: {e}"
-        )
-
-        return False
-
+   except Exception as e:
+       print(f"MOMENTUM FILTER ERROR: {e}")
+       return False
 
 MARKETAUX_API_KEY = os.getenv("MARKETAUX_API_KEY")
 DATASECTORS_API_KEY = os.getenv("DATASECTORS_API_KEY")
