@@ -273,7 +273,6 @@ def has_market_momentum(indicators):
         trend_1h = h1.get("trend", "SIDEWAYS")
 
         rsi_5m = float(m5.get("rsi14", 50))
-        rsi_15m = float(m15.get("rsi14", 50))
 
         macd_5m = float(
             m5.get("macd_histogram", 0)
@@ -342,40 +341,37 @@ def has_market_momentum(indicators):
             sell_score += 1
 
         # =========================
+        # DEBUG FILTER
+        # =========================
+
+        print(
+            f"FILTER SCORE | "
+            f"BUY={buy_score} | "
+            f"SELL={sell_score} | "
+            f"1H={trend_1h} | "
+            f"15M={trend_15m} | "
+            f"5M={trend_5m}"
+        )
+
+        # =========================
         # FILTER
         # =========================
 
-        # Minimal 1H + 15M harus searah
-        bullish_setup = (
-            trend_1h == "BULLISH"
-            and trend_15m == "BULLISH"
+        if buy_score >= 6:
+            return True
+
+        if sell_score >= 6:
+            return True
+
+        return False
+
+    except Exception as e:
+
+        print(
+            f"MOMENTUM FILTER ERROR: {e}"
         )
 
-        bearish_setup = (
-            trend_1h == "BEARISH"
-            and trend_15m == "BEARISH"
-        )
-            print(
-        f"FILTER SCORE | "
-        f"BUY={buy_score} | "
-        f"SELL={sell_score} | "
-        f"1H={trend_1h} | "
-        f"15M={trend_15m} | "
-        f"5M={trend_5m}"
-    )
-
-    # Filter tidak terlalu ketat
-    if buy_score >= 6:
-        return True
-
-    if sell_score >= 6:
-        return True
-
-    return False
-
-except Exception as e:
-    print(f"MOMENTUM FILTER ERROR: {e}")
-    return False
+        return False
 
 
 MARKETAUX_API_KEY = os.getenv("MARKETAUX_API_KEY")
