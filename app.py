@@ -248,7 +248,6 @@ def calculate_multi_timeframe_indicators(market_data):
 
     return result
 
-
 def has_market_momentum(indicators):
 
     try:
@@ -341,7 +340,7 @@ def has_market_momentum(indicators):
             sell_score += 1
 
         # =========================
-        # DEBUG FILTER
+        # DEBUG
         # =========================
 
         print(
@@ -354,30 +353,34 @@ def has_market_momentum(indicators):
         )
 
         # =========================
-        # FILTER
+        # SETUP BUY
         # =========================
 
-        # SETUP BUY
         if (
             trend_1h == "BULLISH"
             and trend_15m == "BULLISH"
             and buy_score >= 5
         ):
-           return True
+            return True
 
+        # =========================
         # SETUP SELL
+        # =========================
+
         if (
             trend_1h == "BEARISH"
             and trend_15m == "BEARISH"
             and sell_score >= 5
         ):
-           return True
+            return True
 
         return False
 
-   except Exception as e:
-       print(f"MOMENTUM FILTER ERROR: {e}")
-       return False
+    except Exception as e:
+        print(
+            f"MOMENTUM FILTER ERROR: {e}"
+        )
+        return False
 
 MARKETAUX_API_KEY = os.getenv("MARKETAUX_API_KEY")
 DATASECTORS_API_KEY = os.getenv("DATASECTORS_API_KEY")
