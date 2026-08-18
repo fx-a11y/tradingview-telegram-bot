@@ -358,7 +358,6 @@ def has_market_momentum(indicators):
 
         if (
             trend_1h == "BULLISH"
-            and trend_15m == "BULLISH"
             and buy_score >= 5
         ):
             return True
@@ -369,7 +368,6 @@ def has_market_momentum(indicators):
 
         if (
             trend_1h == "BEARISH"
-            and trend_15m == "BEARISH"
             and sell_score >= 5
         ):
             return True
