@@ -355,32 +355,27 @@ def has_market_momentum(indicators):
             trend_1h == "BEARISH"
             and trend_15m == "BEARISH"
         )
-        print(
-    f"FILTER SCORE | "
-    f"BUY={buy_score} | "
-    f"SELL={sell_score} | "
-    f"1H={trend_1h} | "
-    f"15M={trend_15m} | "
-    f"5M={trend_5m}"
-)
+            print(
+        f"FILTER SCORE | "
+        f"BUY={buy_score} | "
+        f"SELL={sell_score} | "
+        f"1H={trend_1h} | "
+        f"15M={trend_15m} | "
+        f"5M={trend_5m}"
+    )
 
-# =========================
-# FINAL GEMINI FILTER
-# =========================
+    # Filter tidak terlalu ketat
+    if buy_score >= 6:
+        return True
 
-if buy_score >= 6:
-    print("GEMINI FILTER: BUY SETUP PASSED")
-    return True
+    if sell_score >= 6:
+        return True
 
-if sell_score >= 6:
-    print("GEMINI FILTER: SELL SETUP PASSED")
-    return True
+    return False
 
-print("GEMINI FILTER: NO SETUP")
-return False
-
-    except Exception:
-        return False
+except Exception as e:
+    print(f"MOMENTUM FILTER ERROR: {e}")
+    return False
 
 
 MARKETAUX_API_KEY = os.getenv("MARKETAUX_API_KEY")
