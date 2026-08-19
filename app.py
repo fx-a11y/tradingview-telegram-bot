@@ -354,18 +354,34 @@ def has_market_momentum(indicators):
         )
 
         # =========================
-        # FILTER RINGAN
+        # SETUP UTAMA
         # =========================
-        #
-        # Tidak lagi mewajibkan
-        # 1H + 15M harus searah.
-        #
-        # Gemini yang menentukan
-        # BUY / SELL / NO TRADE.
-        #
-        # Score >= 5 = cukup menarik
-        # untuk dikirim ke Gemini.
+
+        bullish_setup = (
+            trend_1h == "BULLISH"
+            and trend_15m == "BULLISH"
+        )
+
+        bearish_setup = (
+            trend_1h == "BEARISH"
+            and trend_15m == "BEARISH"
+        )
+
         # =========================
+        # FILTER FINAL
+        # =========================
+
+        # 1H + 15M searah = cukup menarik
+        # Gemini akan menentukan BUY / SELL / NO TRADE
+
+        if bullish_setup:
+            return True
+
+        if bearish_setup:
+            return True
+
+        # Score minimal 5 juga bisa diteruskan
+        # untuk menangkap peluang momentum
 
         if buy_score >= 5:
             return True
@@ -382,6 +398,7 @@ def has_market_momentum(indicators):
         )
 
         return False
+
 
 MARKETAUX_API_KEY = os.getenv("MARKETAUX_API_KEY")
 DATASECTORS_API_KEY = os.getenv("DATASECTORS_API_KEY")
