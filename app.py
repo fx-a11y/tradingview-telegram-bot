@@ -364,20 +364,138 @@ def has_market_momentum(indicators):
 
         # =========================
         # SETUP SELL
+def has_market_momentum(indicators):
+
+    try:
+
+        m5 = indicators.get("5min", {})
+        m15 = indicators.get("15min", {})
+        h1 = indicators.get("1h", {})
+
+        # =========================
+        # CEK DATA
         # =========================
 
         if (
-            trend_1h == "BEARISH"
-            and sell_score >= 5
+            "error" in m5
+            or "error" in m15
+            or "error" in h1
         ):
+            return False
+
+        trend_5m = m5.get("trend", "SIDEWAYS")
+        trend_15m = m15.get("trend", "SIDEWAYS")
+        trend_1h = h1.get("trend", "SIDEWAYS")
+
+        rsi_5m = float(m5.get("rsi14", 50))
+
+        macd_5m = float(
+            m5.get("macd_histogram", 0)
+        )
+
+        macd_15m = float(
+            m15.get("macd_histogram", 0)
+        )
+
+        macd_1h = float(
+            h1.get("macd_histogram", 0)
+        )
+
+        # =========================
+        # BUY SCORE
+        # =========================
+
+        buy_score = 0
+
+        if trend_1h == "BULLISH":
+            buy_score += 2
+
+        if trend_15m == "BULLISH":
+            buy_score += 2
+
+        if trend_5m == "BULLISH":
+            buy_score += 1
+
+        if macd_1h > 0:
+            buy_score += 1
+
+        if macd_15m > 0:
+            buy_score += 1
+
+        if macd_5m > 0:
+            buy_score += 1
+
+        if 45 <= rsi_5m <= 70:
+            buy_score += 1
+
+        # =========================
+        # SELL SCORE
+        # =========================
+
+        sell_score = 0
+
+        if trend_1h == "BEARISH":
+            sell_score += 2
+
+        if trend_15m == "BEARISH":
+            sell_score += 2
+
+        if trend_5m == "BEARISH":
+            sell_score += 1
+
+        if macd_1h < 0:
+            sell_score += 1
+
+        if macd_15m < 0:
+            sell_score += 1
+
+        if macd_5m < 0:
+            sell_score += 1
+
+        if 30 <= rsi_5m <= 55:
+            sell_score += 1
+
+        # =========================
+        # DEBUG
+        # =========================
+
+        print(
+            f"FILTER SCORE | "
+            f"BUY={buy_score} | "
+            f"SELL={sell_score} | "
+            f"1H={trend_1h} | "
+            f"15M={trend_15m} | "
+            f"5M={trend_5m}"
+        )
+
+        # =========================
+        # FILTER RINGAN
+        # =========================
+        #
+        # Tidak lagi mewajibkan
+        # 1H + 15M harus searah.
+        #
+        # Gemini yang menentukan
+        # BUY / SELL / NO TRADE.
+        #
+        # Score >= 5 = cukup menarik
+        # untuk dikirim ke Gemini.
+        # =========================
+
+        if buy_score >= 5:
+            return True
+
+        if sell_score >= 5:
             return True
 
         return False
 
     except Exception as e:
+
         print(
             f"MOMENTUM FILTER ERROR: {e}"
         )
+
         return False
 
 MARKETAUX_API_KEY = os.getenv("MARKETAUX_API_KEY")
@@ -792,7 +910,7 @@ Jika NO TRADE:
                 url,
                 params=params,
                 json=payload,
-                timeout=30
+                timeout=15
             )
 
             # =========================
