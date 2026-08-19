@@ -1287,6 +1287,21 @@ def process_signal(pair, signal_data):
 
         price=price
     )
+    # =========================
+    # CEK RESPONSE GEMINI
+    # =========================
+
+    if ai is None:
+    ai = {
+        "decision": "NO TRADE",
+        "confidence": 0,
+        "entry": 0,
+        "stop_loss": 0,
+        "take_profit_1": 0,
+        "take_profit_2": 0,
+        "risk_reward": 0,
+        "reason": "Gemini tidak memberikan response."
+    }
 
     # =========================
     # 9. RETURN
