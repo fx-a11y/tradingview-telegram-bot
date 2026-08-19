@@ -680,33 +680,27 @@ HIRARKI TIMEFRAME:
 ATURAN ANALISA
 ================================
 
-BUY hanya jika:
-- Trend 1H bullish
-- 15M mendukung bullish
-- 5M mendukung bullish
-- MACD mendukung BUY
-- RSI tidak terlalu overbought
-- Harga tidak terlalu dekat resistance
-- Momentum mendukung entry
+BUY jika:
+- Bias 1H mendukung bullish
+- 15M memberikan setup bullish atau mulai reversal
+- 5M memberikan momentum/konfirmasi
+- MACD dan RSI mendukung
+- Risk/reward masuk akal
 
-SELL hanya jika:
-- Trend 1H bearish
-- 15M mendukung bearish
-- 5M mendukung bearish
-- MACD mendukung SELL
-- RSI tidak terlalu oversold
-- Harga tidak terlalu dekat support
-- Momentum mendukung entry
+SELL jika:
+- Bias 1H mendukung bearish
+- 15M memberikan setup bearish atau mulai reversal
+- 5M memberikan momentum/konfirmasi
+- MACD dan RSI mendukung
+- Risk/reward masuk akal
 
-NO TRADE jika:
-- Timeframe bertentangan
-- Momentum lemah
-- RSI terlalu ekstrem
-- Belum ada konfirmasi entry
-- Risiko terlalu tinggi
-- Kondisi market tidak jelas
+Tidak wajib 1H, 15M dan 5M semuanya sama arah.
 
-Jangan memaksakan BUY atau SELL.
+Jika timeframe berbeda arah:
+- gunakan 1H sebagai bias utama
+- 15M sebagai setup
+- 5M sebagai trigger
+- jangan langsung NO TRADE hanya karena satu timeframe berlawanan.
 
 ================================
 RISK MANAGEMENT
@@ -804,7 +798,7 @@ Jika NO TRADE:
         ]
     }
 
-    for attempt in range(3):
+    for attempt in range(1):
 
         try:
 
@@ -812,7 +806,7 @@ Jika NO TRADE:
                 url,
                 params=params,
                 json=payload,
-                timeout=15
+                timeout=10
             )
 
             # =========================
