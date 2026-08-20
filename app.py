@@ -1279,7 +1279,7 @@ def process_signal(pair, signal_data):
     # 8. GEMINI
     # =========================
 
-        ai = analyze_with_gemini(
+    ai = analyze_with_gemini(
         pair=pair,
         signal_data=signal_with_indicators,
         price=price
@@ -1302,7 +1302,7 @@ def process_signal(pair, signal_data):
         }
 
     # =========================
-    # RETURN
+    # 9. RETURN
     # =========================
 
     return {
@@ -1338,7 +1338,7 @@ def process_signal(pair, signal_data):
             "reason",
             "Tidak ada alasan."
         )
-        }
+    }
 
 
    
