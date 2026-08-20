@@ -1279,82 +1279,69 @@ def process_signal(pair, signal_data):
     # 8. GEMINI
     # =========================
 
-    ai = analyze_with_gemini(
-
+        ai = analyze_with_gemini(
         pair=pair,
-
         signal_data=signal_with_indicators,
-
         price=price
     )
-   # =========================
-   # CEK RESPONSE GEMINI
-   # =========================
-
-   if ai is None:
-        ai = {
-           "decision": "NO TRADE",
-           "confidence": 0,
-           "entry": 0,
-           "stop_loss": 0,
-           "take_profit_1": 0,
-           "take_profit_2": 0,
-           "risk_reward": 0,
-           "reason": "Gemini tidak memberikan response."
-      }
 
     # =========================
-    # 9. RETURN
+    # CEK RESPONSE GEMINI
+    # =========================
+
+    if ai is None:
+        ai = {
+            "decision": "NO TRADE",
+            "confidence": 0,
+            "entry": 0,
+            "stop_loss": 0,
+            "take_profit_1": 0,
+            "take_profit_2": 0,
+            "risk_reward": 0,
+            "reason": "Gemini tidak memberikan response."
+        }
+
+    # =========================
+    # RETURN
     # =========================
 
     return {
+        "decision": ai.get(
+            "decision",
+            "NO TRADE"
+        ),
+        "confidence": ai.get(
+            "confidence",
+            0
+        ),
+        "entry": ai.get(
+            "entry",
+            0
+        ),
+        "stop_loss": ai.get(
+            "stop_loss",
+            0
+        ),
+        "take_profit_1": ai.get(
+            "take_profit_1",
+            0
+        ),
+        "take_profit_2": ai.get(
+            "take_profit_2",
+            0
+        ),
+        "risk_reward": ai.get(
+            "risk_reward",
+            0
+        ),
+        "reason": ai.get(
+            "reason",
+            "Tidak ada alasan."
+        )
+        }
 
-    "decision": ai.get(
-        "decision",
-        "NO TRADE"
-    ),
 
-    "confidence": ai.get(
-        "confidence",
-        0
-    ),
-
-    "entry": ai.get(
-        "entry",
-        0
-    ),
-
-    "stop_loss": ai.get(
-        "stop_loss",
-        0
-    ),
-
-    "take_profit_1": ai.get(
-        "take_profit_1",
-        0
-    ),
-
-    "take_profit_2": ai.get(
-        "take_profit_2",
-        0
-    ),
-
-    "risk_reward": ai.get(
-        "risk_reward",
-        0
-    ),
-
-    "reason": ai.get(
-        "reason",
-        ""
-    ),
-
-    "pair": pair,
-
-    "price": price,
-
-    "indicators": indicators
-}
+   
 
 @app.route("/pause-debug/<pair>")
 def pause_debug(pair):
