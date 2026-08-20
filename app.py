@@ -1278,12 +1278,22 @@ def process_signal(pair, signal_data):
     # =========================
     # 8. GEMINI
     # =========================
+    
+    print("===== PRICE DEBUG =====")
+    print("PRICE:", price)
+    print("PRICE TYPE:", type(price))
+    print("======================")
 
     ai = analyze_with_gemini(
         pair=pair,
         signal_data=signal_with_indicators,
         price=price
     )
+    
+    print("===== GEMINI DEBUG =====")
+    print("AI TYPE:", type(ai))
+    print("AI RESULT:", ai)
+    print("========================")
 
     # =========================
     # CEK RESPONSE GEMINI
