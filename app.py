@@ -814,7 +814,7 @@ Jika NO TRADE:
         ]
     }
 
-    for attempt in range(2):
+    for attempt in range(3):
 
         try:
 
@@ -825,7 +825,7 @@ Jika NO TRADE:
                 timeout=10
             )
             print(
-                f"GEMINI ATTEMPT {attempt + 1}/2 | "
+                f"GEMINI ATTEMPT {attempt + 1}/3 | "
                 f"STATUS={response.status_code}"
             )
             
@@ -1148,7 +1148,7 @@ Jika NO TRADE:
 
         except Exception as e:
             print(
-        f"GEMINI ATTEMPT {attempt + 1}/2 ERROR: {e}"
+        f"GEMINI ATTEMPT {attempt + 1}/3 ERROR: {e}"
             )
             
             if attempt < 2:
