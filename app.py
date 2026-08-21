@@ -777,15 +777,36 @@ Format:
 {{
     "decision": "BUY",
     "confidence": 80,
-    "entry_zone_low": 4490.20,
-    "entry_zone_high": 4500.20,
-    "stop_loss": 4475.00,
-    "take_profit_1": 4520.00,
-    "take_profit_2": 4550.00,
+    "entry_zone_low": 4550.00,
+    "entry_zone_high": 4555.00,
+    "stop_loss": 4542.00,
+    "take_profit_1": 4570.00,
+    "take_profit_2": 4585.00,
     "risk_reward": 2.0,
-    "status": "WAITING",
-    "reason": "Alasan berdasarkan data market."
+    "reason": "Trend dan momentum bullish..."
 }}
+{{
+    "decision": "SELL",
+    "confidence": 80,
+    "entry_zone_low": 4565.00,
+    "entry_zone_high": 4570.00,
+    "stop_loss": 4578.00,
+    "take_profit_1": 4555.00,
+    "take_profit_2": 4540.00,
+    "risk_reward": 2.0,
+    "reason": "..."
+}}
+{{
+    "decision": "NO TRADE",
+    "confidence": 0,
+    "entry_zone_low": 0,
+    "entry_zone_high": 0,
+    "stop_loss": 0,
+    "take_profit_1": 0,
+    "take_profit_2": 0,
+    "risk_reward": 0,
+    "reason": "Kondisi market belum memenuhi syarat entry."
+    }}
 
 Decision hanya boleh:
 
@@ -912,9 +933,14 @@ Jika NO TRADE:
                 # ENTRY
                 # =========================
 
-                entry = ai_result.get(
-                    "entry",
-                    0
+                entry_zone_low = ai_result.get(
+                       "entry_zone_low",
+                       0
+                )
+
+                entry_zone_high = ai_result.get(
+                        "entry_zone_high",
+                        0
                 )
 
                 stop_loss = ai_result.get(
@@ -940,7 +966,16 @@ Jika NO TRADE:
                 # =========================
                 # CONVERT NUMBER
                 # =========================
+                try:
+                    entry_zone_low = float(entry_zone_low)
+                except:
+                    entry_zone_low = 0
 
+                try:
+                    entry_zone_high = float(entry_zone_high)
+                except:
+                    entry_zone_high = 0
+        
                 try:
                     entry = float(entry)
                 except:
@@ -971,6 +1006,7 @@ Jika NO TRADE:
                     )
                 except:
                     risk_reward = 0
+                    
 
                 # =========================
                 # VALIDASI NO TRADE
@@ -978,11 +1014,12 @@ Jika NO TRADE:
 
                 if decision == "NO TRADE":
 
-                    entry = 0
-                    stop_loss = 0
-                    take_profit_1 = 0
-                    take_profit_2 = 0
-                    risk_reward = 0
+                     entry_zone_low = 0
+                     entry_zone_high = 0
+                     stop_loss = 0
+                     take_profit_1 = 0
+                     take_profit_2 = 0
+                     risk_reward = 0
 
                 # =========================
                 # VALIDASI BUY
@@ -991,12 +1028,12 @@ Jika NO TRADE:
                 elif decision == "BUY":
 
                     valid_buy = (
-                        entry > 0
-                        and stop_loss > 0
-                        and take_profit_1 > entry
-                        and take_profit_2 > take_profit_1
-                        and stop_loss < entry
-                        and risk_reward > 0
+                       entry_zone_low > 0
+                       and entry_zone_high > entry_zone_low
+                       and stop_loss < entry_zone_low
+                       and take_profit_1 > entry_zone_high
+                       and take_profit_2 > take_profit_1
+                       and risk_reward > 0
                     )
 
                     if not valid_buy:
@@ -1030,9 +1067,10 @@ Jika NO TRADE:
                 else:
 
                     valid_sell = (
-                        entry > 0
-                        and stop_loss > entry
-                        and take_profit_1 < entry
+                        entry_zone_low > 0
+                        and entry_zone_high > entry_zone_low
+                        and stop_loss > entry_zone_high
+                        and take_profit_1 < entry_zone_low
                         and take_profit_2 < take_profit_1
                         and risk_reward > 0
                     )
@@ -1071,7 +1109,9 @@ Jika NO TRADE:
 
                     "confidence": confidence,
 
-                    "entry": entry,
+                    "entry_zone_low": entry_zone_low,
+
+                    "entry_zone_high": entry_zone_high,
 
                     "stop_loss": stop_loss,
 
