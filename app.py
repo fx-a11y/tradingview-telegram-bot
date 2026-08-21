@@ -706,35 +706,49 @@ Jika timeframe berbeda arah:
 RISK MANAGEMENT
 ================================
 
-Jika BUY:
+================================
+ENTRY ZONE
+================================
 
-ENTRY harus berada dekat harga market yang masuk akal.
+Jangan selalu memberikan entry tepat pada harga saat ini.
 
-STOP LOSS harus berada DI BAWAH ENTRY.
+Jika kondisi BUY tetapi harga saat ini sudah terlalu jauh
+dari area entry yang ideal, berikan ENTRY ZONE untuk pullback.
 
-TAKE PROFIT 1 harus berada DI ATAS ENTRY.
+ENTRY ZONE harus terdiri dari:
 
-TAKE PROFIT 2 harus berada DI ATAS TAKE PROFIT 1.
+entry_zone_low
+entry_zone_high
 
-Jika SELL:
+Untuk BUY:
+- Entry zone berada di bawah atau dekat harga saat ini.
+- Entry zone harus berada pada area teknikal yang masuk akal.
+- Jangan membuat entry zone terlalu jauh tanpa alasan teknikal.
 
-ENTRY harus berada dekat harga market yang masuk akal.
+Untuk SELL:
+- Entry zone berada di atas atau dekat harga saat ini.
+- Entry zone harus berada pada area teknikal yang masuk akal.
 
-STOP LOSS harus berada DI ATAS ENTRY.
+Jika harga saat ini sudah berada di area entry yang ideal,
+entry zone boleh berada dekat harga saat ini.
 
-TAKE PROFIT 1 harus berada DI BAWAH ENTRY.
+Jangan menggunakan angka entry secara sembarangan.
+Gunakan support, resistance, momentum, trend dan data market.
 
-TAKE PROFIT 2 harus berada DI BAWAH TAKE PROFIT 1.
+================================
+SIGNAL STATUS
+================================
 
-Risk/Reward harus dihitung berdasarkan ENTRY, STOP LOSS dan TAKE PROFIT.
+Decision BUY atau SELL berarti setup tersedia,
+BUKAN berarti langsung entry.
 
-Gunakan harga dan data market yang diberikan.
+Bot akan menunggu harga masuk ke ENTRY ZONE.
 
-Jangan membuat harga market secara sembarangan.
+Jika belum masuk ENTRY ZONE:
+status = "WAITING"
 
-Jika kondisi tidak memenuhi syarat untuk entry:
-decision = NO TRADE
-dan semua nilai Entry, SL, TP1, TP2 dan R:R = 0.
+Jika harga sudah masuk ENTRY ZONE:
+status = "ENTRY_READY"
 
 ================================
 CONFIDENCE
@@ -763,12 +777,14 @@ Format:
 {{
     "decision": "BUY",
     "confidence": 80,
-    "entry": 4426.30,
-    "stop_loss": 4418.00,
-    "take_profit_1": 4435.00,
-    "take_profit_2": 4445.00,
+    "entry_zone_low": 4490.20,
+    "entry_zone_high": 4500.20,
+    "stop_loss": 4475.00,
+    "take_profit_1": 4520.00,
+    "take_profit_2": 4550.00,
     "risk_reward": 2.0,
-    "reason": "Alasan singkat berdasarkan data market."
+    "status": "WAITING",
+    "reason": "Alasan berdasarkan data market."
 }}
 
 Decision hanya boleh:
