@@ -822,7 +822,7 @@ Jika NO TRADE:
                 url,
                 params=params,
                 json=payload,
-                timeout=10
+                timeout=20
             )
             print(
                 f"GEMINI ATTEMPT {attempt + 1}/3 | "
