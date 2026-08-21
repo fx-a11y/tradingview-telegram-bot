@@ -798,7 +798,7 @@ Jika NO TRADE:
         ]
     }
 
-    for attempt in range(1):
+    for attempt in range(2):
 
         try:
 
@@ -808,7 +808,11 @@ Jika NO TRADE:
                 json=payload,
                 timeout=10
             )
-
+            print(
+                f"GEMINI ATTEMPT {attempt + 1}/2 | "
+                f"STATUS={response.status_code}"
+            )
+            
             # =========================
             # GEMINI BERHASIL
             # =========================
@@ -1127,7 +1131,10 @@ Jika NO TRADE:
         # =========================
 
         except Exception as e:
-
+            print(
+        f"GEMINI ATTEMPT {attempt + 1}/2 ERROR: {e}"
+            )
+            
             if attempt < 2:
 
                 time.sleep(
@@ -1156,6 +1163,21 @@ Jika NO TRADE:
                     f"Gemini AI error: "
                     f"{str(e)}"
                 )
+    }
+
+    # =========================
+    # FINAL FALLBACK
+    # =========================
+
+    return {
+        "decision": "NO TRADE",
+        "confidence": 0,
+        "entry": 0,
+        "stop_loss": 0,
+        "take_profit_1": 0,
+        "take_profit_2": 0,
+        "risk_reward": 0,
+        "reason": "Gemini tidak memberikan response setelah beberapa percobaan."
     }
 
 
