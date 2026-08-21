@@ -828,6 +828,9 @@ Jika NO TRADE:
                 f"GEMINI ATTEMPT {attempt + 1}/3 | "
                 f"STATUS={response.status_code}"
             )
+            print(
+                f"GEMINI RESPONSE: {response.text[:1000]}"
+            )
             
             # =========================
             # GEMINI BERHASIL
