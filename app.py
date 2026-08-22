@@ -878,6 +878,7 @@ Jika NO TRADE:
                     )
 
                 ai_result = json.loads(ai_text)
+                print("GEMINI JSON:", ai_result)
 
                 # =========================
                 # DECISION
@@ -932,6 +933,10 @@ Jika NO TRADE:
                 # =========================
                 # ENTRY
                 # =========================
+                entry = ai_result.get(
+                   "entry",
+                   0
+                )
 
                 entry_zone_low = ai_result.get(
                        "entry_zone_low",
