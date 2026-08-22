@@ -1667,8 +1667,9 @@ DECISION: {result.get("decision", "NO TRADE")}
 CONFIDENCE: {result.get("confidence", 0)}%
 ━━━━━━━━━━━━━━
 
-ENTRY:
-{result.get("entry", 0)}
+ENTRY ZONE:
+{result.get("entry_zone_low", 0)} - 
+{result.get("entry_zone_high", 0)}
 
 STOP LOSS:
 {result.get("stop_loss", 0)}
