@@ -653,7 +653,7 @@ def analyze_with_gemini(pair, signal_data, price):
     import json
     import time
 
-    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent"
+    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
 
     params = {
         "key": GEMINI_API_KEY
