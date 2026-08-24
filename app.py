@@ -1389,7 +1389,8 @@ def process_signal(pair, signal_data):
         ai = {
             "decision": "NO TRADE",
             "confidence": 0,
-            "entry": 0,
+            "entry_zone_low": 0,
+            "entry_zone_high": 0,
             "stop_loss": 0,
             "take_profit_1": 0,
             "take_profit_2": 0,
@@ -1410,8 +1411,12 @@ def process_signal(pair, signal_data):
             "confidence",
             0
         ),
-        "entry": ai.get(
-            "entry",
+        "entry_zone_low": ai.get(
+           "entry_zone_low",
+            0
+        ),
+        "entry_zone_high": ai.get(
+           "entry_zone_high",
             0
         ),
         "stop_loss": ai.get(
