@@ -1463,7 +1463,7 @@ def process_signal(pair, signal_data):
         "reason": ai.get(
             "reason",
             "Tidak ada alasan."
-        )
+        ),
         "price": price.get("price", "") if isinstance(price, dict) else price,
     }
 
