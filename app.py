@@ -1464,6 +1464,7 @@ def process_signal(pair, signal_data):
             "reason",
             "Tidak ada alasan."
         )
+        "price": price.get("price", "") if isinstance(price, dict) else price,
     }
 
 
@@ -1695,8 +1696,7 @@ Event Time:
 Pair: {pair}
 
 Harga:
-{price.get("price", "") if 
- isinstance(price, dict) else price}
+{result.get("price", "")}
 
 ━━━━━━━━━━━━━━
 DECISION: {result.get("decision", "NO TRADE")}
