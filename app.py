@@ -1695,7 +1695,8 @@ Event Time:
 Pair: {pair}
 
 Harga:
-{result.get("price", "")}
+{price.get("price", "") if 
+ isinstance(price, dict) else price}
 
 ━━━━━━━━━━━━━━
 DECISION: {result.get("decision", "NO TRADE")}
