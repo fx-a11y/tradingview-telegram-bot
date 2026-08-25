@@ -1244,7 +1244,32 @@ Jika NO TRADE:
         "reason": "Gemini tidak memberikan response setelah beberapa percobaan."
     }
 
+def check_entry_zone_status(
+    decision,
+    price,
+    entry_zone_low,
+    entry_zone_high
+):
+    if decision not in ["BUY", "SELL"]:
+        return "NO TRADE"
 
+    if decision == "BUY":
+        if entry_zone_low <= price <= entry_zone_high:
+            return "ENTRY HIT"
+
+        if price > entry_zone_high:
+            return "MISSED"
+
+        return "WAITING"
+
+    if decision == "SELL":
+        if entry_zone_low <= price <= entry_zone_high:
+            return "ENTRY HIT"
+
+        if price < entry_zone_low:
+            return "MISSED"
+
+        return "WAITING"
               
 def process_signal(pair, signal_data):
 
