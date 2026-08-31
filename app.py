@@ -1406,15 +1406,15 @@ def process_signal(pair, signal_data):
         price=price
     )
     if ai and ai.get("decision") in ["BUY", "SELL"]:
-    ACTIVE_SIGNALS[pair] = {
-        "decision": ai.get("decision"),
-        "entry_zone_low": ai.get("entry_zone_low", 0),
-        "entry_zone_high": ai.get("entry_zone_high", 0),
-        "stop_loss": ai.get("stop_loss", 0),
-        "take_profit_1": ai.get("take_profit_1", 0),
-        "take_profit_2": ai.get("take_profit_2", 0),
-        "risk_reward": ai.get("risk_reward", 0),
-        "status": "WAITING"
+        ACTIVE_SIGNALS[pair] = {
+            "decision": ai.get("decision"),
+            "entry_zone_low": ai.get("entry_zone_low", 0),
+            "entry_zone_high": ai.get("entry_zone_high", 0),
+            "stop_loss": ai.get("stop_loss", 0),
+            "take_profit_1": ai.get("take_profit_1", 0),
+            "take_profit_2": ai.get("take_profit_2", 0),
+            "risk_reward": ai.get("risk_reward", 0),
+            "status": "WAITING"
     }
     
     print("===== GEMINI DEBUG =====")
