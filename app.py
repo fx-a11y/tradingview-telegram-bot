@@ -1275,6 +1275,54 @@ def check_entry_zone_status(
         return "WAITING"
 
     return "WAITING"
+
+def monitor_entry_zone(pair, current_price):
+    signal = ACTIVE_SIGNALS.get(pair)
+
+    if not signal:
+        return None
+
+    status = check_entry_zone_status(
+        signal["decision"],
+        current_price,
+        signal["entry_zone_low"],
+        signal["entry_zone_high"]
+    )
+
+    old_status = signal.get("status", "WAITING")
+
+    # =========================
+    # ENTRY HIT
+    # =========================
+
+    if status == "ENTRY HIT" and old_status == "WAITING":
+
+        signal["status"] = "ENTRY HIT"
+
+        return {
+            "status": "ENTRY HIT",
+            "decision": signal["decision"],
+            "message": (
+                f"🟢 ENTRY HIT\n\n"
+                f"Pair: {pair}\n"
+                f"Harga: {current_price}\n\n"
+                f"Entry Zone: "
+                f"{signal['entry_zone_low']} - "
+                f"{signal['entry_zone_high']}\n\n"
+                f"STOP LOSS: {signal['stop_loss']}\n"
+                f"TAKE PROFIT 1: {signal['take_profit_1']}\n"
+                f"TAKE PROFIT 2: {signal['take_profit_2']}"
+            )
+        }
+
+    # =========================
+    # WAITING
+    # =========================
+
+    if status == "WAITING":
+        signal["status"] = "WAITING"
+
+    return None
               
 def process_signal(pair, signal_data):
 
